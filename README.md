@@ -26,7 +26,7 @@ This fork is maintained independently and includes community enhancements on top
 
 ### Manual installation
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/YOUR_GITHUB_USERNAME/initiative-tracker-plus/releases).
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/msweat254/initiative-tracker/releases).
 2. Create a folder named `initiative-tracker-plus` in your vault's `.obsidian/plugins/` directory.
 3. Copy the three files into that folder.
 4. Enable the plugin under **Settings → Community plugins**.
@@ -49,14 +49,14 @@ creatures:
 
 ## Relationship to the original plugin
 
-This plugin is a **fork** of Initiative Tracker by Jeremy Valentine, also maintained by the [Obsidian TTRPG Community](https://github.com/Obsidian-TTRPG-Community/initiative-tracker).
+This plugin is a **fork** of [Initiative Tracker](https://github.com/valentine195/obsidian-initiative-tracker) by Jeremy Valentine. **Initiative Tracker Plus** is maintained independently in [msweat254/initiative-tracker](https://github.com/msweat254/initiative-tracker).
 
 - **Plugin ID:** `initiative-tracker-plus` (do not install alongside the original `initiative-tracker` plugin)
 - **License:** GNU GPL v3 — see [LICENSE](LICENSE) and [NOTICE](NOTICE)
 
 ## Support
 
-Report bugs and request features on this repository's [Issues](https://github.com/YOUR_GITHUB_USERNAME/initiative-tracker-plus/issues) page.
+Report bugs and request features on the [Issues](https://github.com/msweat254/initiative-tracker/issues) page.
 
 ## Recommended companion plugins
 

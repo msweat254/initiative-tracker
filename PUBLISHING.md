@@ -5,7 +5,7 @@ Use this checklist before submitting **Initiative Tracker Plus** to the Obsidian
 ## Before you publish
 
 - [ ] Create a public GitHub repository for this fork.
-- [ ] Replace every `YOUR_GITHUB_USERNAME` placeholder in `README.md` with your GitHub username.
+- [x] Replace every `YOUR_GITHUB_USERNAME` placeholder in `README.md` with your GitHub username (`msweat254`).
 - [ ] Add your GitHub URL to `manifest.json` as `authorUrl` (optional but recommended).
 - [ ] Confirm you are **not** installing this alongside the original `initiative-tracker` plugin (different plugin IDs, but similar functionality).
 - [ ] Build locally: `npm ci && npm run build`
@@ -36,7 +36,7 @@ Alternatively, push to `main` and let the included GitHub Actions workflow creat
   "name": "Initiative Tracker Plus",
   "author": "Mike",
   "description": "Track TTRPG combat initiative, HP, conditions, and XP in Obsidian encounter blocks. A community fork of Initiative Tracker.",
-  "repo": "YOUR_GITHUB_USERNAME/initiative-tracker-plus"
+  "repo": "msweat254/initiative-tracker"
 }
 ```
 
