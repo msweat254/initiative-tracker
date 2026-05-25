@@ -4,6 +4,6 @@
     "version": "1.0.0",
     "minAppVersion": "1.7.2",
     "author": "Mike",
-    "description": "Track TTRPG combat initiative, HP, conditions, and XP in Obsidian encounter blocks. A community fork of Initiative Tracker.",
+    "description": "Track TTRPG combat initiative, HP, conditions, and XP in encounter blocks. A community fork of Initiative Tracker.",
     "isDesktopOnly": false
 }
