@@ -21,6 +21,12 @@
     export let amount = 1;
     export let plugin: InitiativeTracker;
 
+    let displayManuallySet = false;
+
+    $: if (!displayManuallySet && creature?.name != null) {
+        creature.display = creature.name;
+    }
+
     const add = async (close = true) => {
         if (!creature || !creature.name || !creature.name?.length) {
             new Notice("Enter a name!");
@@ -44,6 +50,7 @@
             ...[...Array(amount).keys()].map((k) => Creature.new(creature))
         );
         creature = new Creature({});
+        displayManuallySet = false;
         if (close) dispatch("close");
     };
 
@@ -77,6 +84,10 @@
         modal.onClose = async () => {
             if (modal.creature) {
                 creature = Creature.from(modal.creature);
+                displayManuallySet = !!(
+                    creature.display &&
+                    creature.display !== creature.name
+                );
 
                 creature.initiative = await plugin.getInitiativeValue(
                     creature.modifier
@@ -112,6 +123,10 @@
             <label for="add-display">Display Name</label>
             <input
                 bind:value={creature.display}
+                on:input={() => {
+                    displayManuallySet =
+                        creature.display !== creature.name;
+                }}
                 id="add-display"
                 type="text"
                 name="display"

@@ -24,9 +24,18 @@
     export let editing: Writable<Creature>;
     export let isEditing: boolean;
 
+    let displayManuallySet = false;
+
+    $: if (!displayManuallySet && creature?.name != null) {
+        creature.display = creature.name;
+    }
+
     editing.subscribe((c) => {
         if (!c) return;
         creature = c;
+        displayManuallySet = !!(
+            creature.display && creature.display !== creature.name
+        );
     });
 
     $: {
@@ -88,6 +97,7 @@
                 $adding = $adding;
                 $editing = null;
                 creature = new Creature({});
+                displayManuallySet = false;
             });
     };
     const editButton = (node: HTMLElement) => {
@@ -128,6 +138,7 @@
                 $adding = $adding;
                 $editing = null;
                 creature = new Creature({});
+                displayManuallySet = false;
             });
     };
     const cancelButton = (node: HTMLElement) => {
@@ -136,6 +147,7 @@
             .setIcon("reset")
             .onClick(() => {
                 creature = new Creature({});
+                displayManuallySet = false;
             });
     };
     const diceButton = (node: HTMLElement) => {
@@ -164,6 +176,10 @@
         modal.onSelect(async (selected) => {
             if (selected.item) {
                 creature = Creature.from(selected.item);
+                displayManuallySet = !!(
+                    creature.display &&
+                    creature.display !== creature.name
+                );
 
                 creature.initiative = await plugin.getInitiativeValue(
                     creature.modifier
@@ -212,6 +228,10 @@
             <input
                 bind:value={creature.display}
                 bind:this={displayNameInput}
+                on:input={() => {
+                    displayManuallySet =
+                        creature.display !== creature.name;
+                }}
                 id="add-display"
                 type="text"
                 name="display"
