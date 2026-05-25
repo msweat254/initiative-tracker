@@ -87,7 +87,11 @@ export class Creature {
 
         this.marker = creature.marker;
 
-        this.hp = this.max;
+        const currentHp =
+            creature.currentHp != null
+                ? Number(creature.currentHp)
+                : this.max;
+        this.hp = Math.max(0, Math.min(currentHp, this.max));
         this.temp = 0;
         this.source = creature.source;
 
@@ -199,7 +203,14 @@ export class Creature {
 
         this.current_max = this.max = creature.hp ? Number(creature.hp) : 0;
 
-        if (this.hp > this.max) this.hp = this.max;
+        if (creature.currentHp != null) {
+            this.hp = Math.max(
+                0,
+                Math.min(Number(creature.currentHp), this.max)
+            );
+        } else if (this.hp > this.max) {
+            this.hp = this.max;
+        }
 
         this.current_ac = this.ac = creature.ac ?? undefined;
         this.note = creature.note;

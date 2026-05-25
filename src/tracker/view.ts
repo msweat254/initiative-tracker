@@ -18,7 +18,7 @@ import type InitiativeTracker from "../main";
 
 import App from "./ui/App.svelte";
 import type { Creature } from "../utils/creature";
-import { PLAYER_VIEW_VIEW } from "../utils/constants";
+import { PLAYER_VIEW_VIEW, PLUGIN_ID } from "../utils/constants";
 import type PlayerView from "./player-view";
 
 export default class TrackerView extends ItemView {
@@ -120,7 +120,7 @@ export class CreatureView extends ItemView {
         this.containerEl.on("click", "a.internal-link", (ev) =>
             this.app.workspace.openLinkText(
                 (ev.target as HTMLAnchorElement).dataset.href,
-                "initiative-tracker"
+                this.plugin.manifest.id
             )
         );
     }
@@ -130,7 +130,7 @@ export class CreatureView extends ItemView {
             .setTooltip("Close Statblock")
             .onClick(async () => {
                 await this.render();
-                this.app.workspace.trigger("initiative-tracker:stop-viewing");
+                this.app.workspace.trigger(`${PLUGIN_ID}:stop-viewing`);
             });
     }
     onunload(): void {
@@ -138,7 +138,7 @@ export class CreatureView extends ItemView {
             this.bestiaryUnload();
             this.bestiaryUnload = null;
         }
-        this.app.workspace.trigger("initiative-tracker:stop-viewing");
+        this.app.workspace.trigger(`${PLUGIN_ID}:stop-viewing`);
     }
     getState(): Record<string, unknown> {
         return {

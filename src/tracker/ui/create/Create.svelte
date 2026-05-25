@@ -238,16 +238,39 @@
                 tabindex="0"
             />
         </div>
-        <div>
-            <label for="add-hp">HP</label>
-            <input
-                bind:value={creature.hp}
-                id="add-hp"
-                type="number"
-                name="hp"
-                tabindex="0"
-            />
-        </div>
+        {#if creature.player && isEditing}
+            <div>
+                <label for="add-current-hp">Current HP</label>
+                <input
+                    bind:value={creature.hp}
+                    id="add-current-hp"
+                    type="number"
+                    name="current-hp"
+                    tabindex="0"
+                />
+            </div>
+            <div>
+                <label for="add-max-hp">Max HP</label>
+                <input
+                    bind:value={creature.max}
+                    id="add-max-hp"
+                    type="number"
+                    name="max-hp"
+                    tabindex="0"
+                />
+            </div>
+        {:else}
+            <div>
+                <label for="add-hp">HP</label>
+                <input
+                    bind:value={creature.hp}
+                    id="add-hp"
+                    type="number"
+                    name="hp"
+                    tabindex="0"
+                />
+            </div>
+        {/if}
         <div>
             <label for="hit-dice">Hit Dice</label>
             <input

@@ -30,6 +30,7 @@ export interface HomebrewCreature {
     name?: string;
     display?: string;
     hp?: number;
+    currentHp?: number;
     ac?: number | string;
     stats?: number[];
     source?: string | string[];

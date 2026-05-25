@@ -1,15 +1,15 @@
 {
-    "name": "@javalent/initiative-tracker",
-    "version": "13.0.21",
-    "description": "TTRPG Initiative Tracker for Obsidian.md",
+    "name": "initiative-tracker-plus",
+    "version": "1.0.0",
+    "description": "TTRPG Initiative Tracker for Obsidian.md (community fork)",
     "types": "./dist/index.d.ts",
     "scripts": {
         "build": "node esbuild.config.mjs production && tsc --project tsconfig.json --emitDeclarationOnly --declaration --declarationMap --outdir ./dist",
         "dev": "node esbuild.config.mjs"
     },
     "keywords": [],
-    "author": "",
-    "license": "MIT",
+    "author": "Mike",
+    "license": "GPL-3.0-or-later",
     "devDependencies": {
         "@codemirror/commands": "^6.2.5",
         "@codemirror/lang-javascript": "^6.2.1",

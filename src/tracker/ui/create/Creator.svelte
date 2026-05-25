@@ -34,7 +34,10 @@
             .onClick(async () => {
                 if (!$adding.length && !isEditing && !Platform.isMobile) return;
                 if (isEditing) {
-                    if ($editing.hp != creature.max) {
+                    if (creature.player) {
+                        creature.hp = $editing.hp;
+                        creature.max = creature.current_max = $editing.max;
+                    } else if ($editing.hp != creature.max) {
                         creature.max = creature.current_max = $editing.hp;
                     }
                     if (creature.dirty_ac) {
@@ -43,6 +46,17 @@
                     }
 
                     tracker.replace(creature, $editing);
+
+                    if (creature.player) {
+                        const player = plugin.data.players.find(
+                            (p) => p.name === creature.name
+                        );
+                        if (player) {
+                            player.hp = creature.max;
+                            player.currentHp = creature.hp;
+                        }
+                        plugin.syncLinkedPlayerHp(creature);
+                    }
                 } else {
                     const creatures = $adding.flatMap(([creature, amount]) => {
                         return [...Array(amount).keys()].map((k) =>
@@ -60,6 +74,7 @@
                         plugin.app.fileManager.processFrontMatter(file, (f) => {
                             f.ac = creature.ac;
                             f.hp = creature.max;
+                            f["current-hp"] = creature.hp;
                             f.level = creature.level;
                             f.modifier = creature.modifier;
                         });

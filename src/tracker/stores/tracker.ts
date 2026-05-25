@@ -3,6 +3,7 @@ import type InitiativeTracker from "../../main";
 import {
     derived,
     get,
+    type Readable,
     type Updater,
     type Writable,
     writable
@@ -15,6 +16,7 @@ import type { InitiativeTrackerData } from "src/settings/settings.types";
 import type { InitiativeViewState } from "../view.types";
 import {
     OVERFLOW_TYPE,
+    PLUGIN_ID,
     RESOLVE_TIES,
     RollPlayerInitiativeBehavior,
     getRpgSystem
@@ -50,6 +52,60 @@ type CreatureUpdate = {
 };
 type CreatureUpdates = { creature: Creature; change: CreatureUpdate };
 const modifier = Platform.isMacOS ? "Meta" : "Control";
+
+let _plugin: InitiativeTracker;
+
+function hpChangeAffectsSync(change: CreatureUpdate): boolean {
+    return (
+        change.hp != null ||
+        change.max != null ||
+        change.set_hp != null ||
+        change.set_max_hp != null
+    );
+}
+
+function maybeSyncLinkedPlayer(creature: Creature, change: CreatureUpdate) {
+    if (!_plugin || !creature.player || !creature.path) return;
+    if (hpChangeAffectsSync(change)) {
+        _plugin.syncLinkedPlayerHp(creature);
+    }
+}
+
+export type EncounterDifficultyState = {
+    difficulty: DifficultyLevel;
+    thresholds: DifficultyThreshold[];
+    labels: [string, string, ...string[]];
+};
+
+/** Matches header display: adjusted XP, or raw total when adjusted is 0. */
+export function getEncounterXpFromDifficulty(
+    dif: EncounterDifficultyState | undefined
+): number {
+    if (!dif) return 0;
+    if (dif.difficulty.value > 0) return dif.difficulty.value;
+    return (
+        dif.difficulty.intermediateValues?.find((v) => v.label === "Total XP")
+            ?.value ?? 0
+    );
+}
+
+function resolvePlayerLevel(
+    creature: Creature,
+    plugin: InitiativeTracker
+): number | undefined {
+    let level = creature.level;
+    if (level == null) {
+        level = plugin.players.get(creature.name)?.level;
+    }
+    if (level == null || isNaN(Number(level))) return undefined;
+    return Number(level);
+}
+
+const difficultyByPlugin = new WeakMap<
+    InitiativeTracker,
+    Readable<EncounterDifficultyState>
+>();
+
 function createTracker() {
     const creatures = writable<Creature[]>([]);
     const updating = writable<Map<Creature, HPUpdate>>(new Map());
@@ -283,6 +339,7 @@ function createTracker() {
                     }`
                 );
             }
+            maybeSyncLinkedPlayer(creature, change);
             if (!creatures.includes(creature)) {
                 creatures.push(creature);
             }
@@ -307,7 +364,7 @@ function createTracker() {
 
     const trySave = () => {
         app.workspace.trigger(
-            "initiative-tracker:save-state",
+            `${PLUGIN_ID}:save-state`,
             getEncounterState()
         );
     };
@@ -367,6 +424,54 @@ function createTracker() {
         }
         return creatures;
     }
+
+    const difficultyFor = (plugin: InitiativeTracker) => {
+        let cached = difficultyByPlugin.get(plugin);
+        if (!cached) {
+            cached = derived([creatures, data], ([values]) => {
+                const players: number[] = [];
+                const creatureMap = new Map<Creature, number>();
+                const rpgSystem = getRpgSystem(plugin);
+
+                for (const creature of values) {
+                    if (!creature.enabled) continue;
+                    if (creature.friendly) continue;
+                    if (creature.player) {
+                        const level = resolvePlayerLevel(creature, plugin);
+                        if (level != null) players.push(level);
+                        continue;
+                    }
+                    const stats = {
+                        name: creature.name,
+                        display: creature.display,
+                        ac: creature.ac,
+                        hp: creature.hp,
+                        modifier: creature.modifier,
+                        xp: creature.xp,
+                        hidden: creature.hidden
+                    };
+                    const existing = [...creatureMap].find(([c]) =>
+                        equivalent(c, stats)
+                    );
+                    if (!existing) {
+                        creatureMap.set(creature, 1);
+                        continue;
+                    }
+                    creatureMap.set(existing[0], existing[1] + 1);
+                }
+                return {
+                    difficulty: rpgSystem.getEncounterDifficulty(
+                        creatureMap,
+                        players
+                    ),
+                    thresholds: rpgSystem.getDifficultyThresholds(players),
+                    labels: rpgSystem.systemDifficulties
+                };
+            });
+            difficultyByPlugin.set(plugin, cached);
+        }
+        return cached;
+    };
 
     return {
         subscribe,
@@ -469,6 +574,7 @@ function createTracker() {
                             }
                         }
                     }
+                    maybeSyncLinkedPlayer(creature, change);
                 }
 
                 return creatures;
@@ -842,9 +948,18 @@ function createTracker() {
                     creature.enabled = true;
                     creature.status.clear();
                 }
+                for (let creature of creatures) {
+                    if (creature.player && creature.path) {
+                        _plugin?.syncLinkedPlayerHp(creature);
+                    }
+                }
                 _logger?.log("Encounter HP & Statuses reset");
                 return creatures;
             }),
+
+        setPlugin: (plugin: InitiativeTracker) => {
+            _plugin = plugin;
+        },
 
         getOrderedCreatures: () => get(ordered),
         logUpdate: (messages: UpdateLogMessage[]) => {
@@ -915,46 +1030,10 @@ function createTracker() {
 
         updateState: () => update((c) => c),
 
-        difficulty: (plugin: InitiativeTracker) =>
-            derived([creatures, data], ([values]) => {
-                const players: number[] = [];
-                const creatureMap = new Map<Creature, number>();
-                const rpgSystem = getRpgSystem(plugin);
+        difficulty: difficultyFor,
 
-                for (const creature of values) {
-                    if (!creature.enabled) continue;
-                    if (creature.friendly) continue;
-                    if (creature.player && creature.level) {
-                        players.push(creature.level);
-                        continue;
-                    }
-                    const stats = {
-                        name: creature.name,
-                        display: creature.display,
-                        ac: creature.ac,
-                        hp: creature.hp,
-                        modifier: creature.modifier,
-                        xp: creature.xp,
-                        hidden: creature.hidden
-                    };
-                    const existing = [...creatureMap].find(([c]) =>
-                        equivalent(c, stats)
-                    );
-                    if (!existing) {
-                        creatureMap.set(creature, 1);
-                        continue;
-                    }
-                    creatureMap.set(existing[0], existing[1] + 1);
-                }
-                return {
-                    difficulty: rpgSystem.getEncounterDifficulty(
-                        creatureMap,
-                        players
-                    ),
-                    thresholds: rpgSystem.getDifficultyThresholds(players),
-                    labels: rpgSystem.systemDifficulties
-                };
-            })
+        getDifficultyValue: (plugin: InitiativeTracker) =>
+            getEncounterXpFromDifficulty(get(difficultyFor(plugin)))
     };
 }
 
@@ -1088,7 +1167,7 @@ class Tracker {
     #updateAndSave(updater: Updater<Creature[]>) {
         this.update(updater);
         app.workspace.trigger(
-            "initiative-tracker:save-state",
+            `${PLUGIN_ID}:save-state`,
             this.getEncounterState()
         );
     }

@@ -1,5 +1,6 @@
 import type { InitiativeViewState } from "src/tracker/view.types";
 import type InitiativeTracker from "../main";
+import { PLUGIN_ID } from "../utils/constants";
 import { tracker } from "../tracker/stores/tracker";
 import { type HomebrewCreature } from "src/types/creatures";
 import { Creature } from "src/utils/creature";
@@ -7,34 +8,37 @@ import { Creature } from "src/utils/creature";
 declare module "obsidian" {
     interface Workspace {
         on(
-            name: "initiative-tracker:should-save",
+            name: `${typeof PLUGIN_ID}:should-save`,
             callback: () => void
         ): EventRef;
-        trigger(name: "initiative-tracker:should-save"): void;
+        trigger(name: `${typeof PLUGIN_ID}:should-save`): void;
         on(
-            name: "initiative-tracker:save-state",
+            name: `${typeof PLUGIN_ID}:save-state`,
             callback: (state?: InitiativeViewState) => void
         ): EventRef;
         trigger(
-            name: "initiative-tracker:save-state",
+            name: `${typeof PLUGIN_ID}:save-state`,
             state?: InitiativeViewState
         ): void;
         /** This event can be used to start an event by sending an object with a name, HP, AC, and initiative modifier at minimum. */
         on(
-            name: "initiative-tracker:start-encounter",
+            name: `${typeof PLUGIN_ID}:start-encounter`,
             callback: (creatures: HomebrewCreature[]) => void
         ): EventRef;
         trigger(
-            name: "initiative-tracker:start-encounter",
+            name: `${typeof PLUGIN_ID}:start-encounter`,
             creatures: HomebrewCreature[]
         ): void;
         on(
-            name: "initiative-tracker:stop-viewing",
+            name: `${typeof PLUGIN_ID}:stop-viewing`,
             callback: (creatures: HomebrewCreature[]) => void
         ): EventRef;
-        trigger(name: "initiative-tracker:stop-viewing"): void;
-        on(name: "initiative-tracker:unloaded", callback: () => void): EventRef;
-        trigger(name: "initiative-tracker:unloaded"): void;
+        trigger(name: `${typeof PLUGIN_ID}:stop-viewing`): void;
+        on(
+            name: `${typeof PLUGIN_ID}:unloaded`,
+            callback: () => void
+        ): EventRef;
+        trigger(name: `${typeof PLUGIN_ID}:unloaded`): void;
     }
 }
 

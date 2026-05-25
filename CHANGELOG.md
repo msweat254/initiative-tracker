@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.0] - 2026-05-25
+
+Initial release of **Initiative Tracker Plus**, a community fork of Initiative Tracker.
+
+### Changes from upstream
+
+- Renamed plugin to **Initiative Tracker Plus** with ID `initiative-tracker-plus`
+- Award encounter XP directly to players from the combat tracker
+- Updated workspace events and view types to avoid conflicts with the original plugin
+- GPL v3 compliance documentation (`NOTICE`, `PUBLISHING.md`)
+
 ## [13.0.21](https://github.com/Obsidian-TTRPG-Community/initiative-tracker/compare/13.0.20...13.0.21) (2026-04-12)
 
 

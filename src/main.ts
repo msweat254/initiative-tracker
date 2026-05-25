@@ -14,6 +14,8 @@ import {
     CREATURE_TRACKER_VIEW,
     DEFAULT_SETTINGS,
     INITIATIVE_TRACKER_VIEW,
+    PLUGIN_ID,
+    getRpgSystem,
     registerIcons
 } from "./utils";
 
@@ -43,6 +45,8 @@ export default class InitiativeTracker extends Plugin {
     playerCreatures: Map<string, Creature> = new Map();
     private lastCombatantLeaf: WorkspaceLeaf | null = null;
     watchers: Map<TFile, HomebrewCreature> = new Map();
+    private hpSyncTimer: ReturnType<typeof setTimeout> | null = null;
+    hpSyncFromVault = false;
     getRoller(str: string) {
         if (!this.canUseDiceRoller) return;
         const roller = window.DiceRoller.getRoller(str, "statblock");
@@ -143,14 +147,9 @@ export default class InitiativeTracker extends Plugin {
         });
     }
     unregisterCommandsFor(encounter: string) {
-        if (
-            this.app.commands.findCommand(
-                `initiative-tracker:start-${encounter}`
-            )
-        ) {
-            delete this.app.commands.commands[
-                `initiative-tracker:start-${encounter}`
-            ];
+        const commandId = `${this.manifest.id}:start-${encounter}`;
+        if (this.app.commands.findCommand(commandId)) {
+            delete this.app.commands.commands[commandId];
         }
     }
 
@@ -224,6 +223,7 @@ export default class InitiativeTracker extends Plugin {
         registerIcons();
 
         await this.loadSettings();
+        tracker.setPlugin(this);
 
         this.setBuilderIcon();
 
@@ -418,6 +418,7 @@ export default class InitiativeTracker extends Plugin {
             this.registerEvent(
                 this.app.metadataCache.on("changed", (file) => {
                     if (!(file instanceof TFile)) return;
+                    if (this.hpSyncFromVault) return;
                     const players = this.data.players.filter(
                         (p) => p.path == file.path
                     );
@@ -426,19 +427,17 @@ export default class InitiativeTracker extends Plugin {
                         this.app.metadataCache.getFileCache(file)?.frontmatter;
                     if (!frontmatter) return;
                     for (let player of players) {
-                        const { ac, hp, modifier, level, name } = frontmatter;
+                        const { ac, modifier, level, name } = frontmatter;
                         player.ac = ac;
-                        player.hp = hp;
                         player.modifier = modifier;
                         player.level = level;
                         player.name = name ? name : player.name;
                         player["statblock-link"] =
                             frontmatter["statblock-link"];
 
-                        this.playerCreatures.set(
-                            player.name,
-                            Creature.from(player)
-                        );
+                        this.applyPlayerHpFromFrontmatter(player, frontmatter);
+                        this.applyPlayerXpFromFrontmatter(player, frontmatter);
+
                         if (this.view) {
                             const creature = tracker
                                 .getOrderedCreatures()
@@ -448,12 +447,14 @@ export default class InitiativeTracker extends Plugin {
                                     creature,
                                     change: {
                                         set_max_hp: player.hp,
+                                        set_hp: player.currentHp,
                                         ac: player.ac
                                     }
                                 });
                             }
                         }
                     }
+                    void this.saveSettings();
                 })
             );
             this.registerEvent(
@@ -563,13 +564,13 @@ export default class InitiativeTracker extends Plugin {
     addEvents() {
         this.registerEvent(
             this.app.workspace.on(
-                "initiative-tracker:should-save",
+                `${PLUGIN_ID}:should-save`,
                 async () => await this.saveSettings()
             )
         );
         this.registerEvent(
             this.app.workspace.on(
-                "initiative-tracker:save-state",
+                `${PLUGIN_ID}:save-state`,
                 async (state: InitiativeViewState) => {
                     this.data.state = state;
                     await this.saveSettings();
@@ -578,7 +579,7 @@ export default class InitiativeTracker extends Plugin {
         );
         this.registerEvent(
             this.app.workspace.on(
-                "initiative-tracker:start-encounter",
+                `${PLUGIN_ID}:start-encounter`,
                 async (homebrews: HomebrewCreature[]) => {
                     try {
                         const creatures = homebrews.map((h) =>
@@ -625,8 +626,8 @@ export default class InitiativeTracker extends Plugin {
         this.app.workspace.detachLeavesOfType(CREATURE_TRACKER_VIEW);
         this.app.workspace.detachLeavesOfType(BUILDER_VIEW);
 
-        this.app.workspace.trigger("initiative-tracker:unloaded");
-        console.log("Initiative Tracker unloaded");
+        this.app.workspace.trigger(`${PLUGIN_ID}:unloaded`);
+        console.log("Initiative Tracker Plus unloaded");
     }
 
     async addTrackerView() {
@@ -656,7 +657,199 @@ export default class InitiativeTracker extends Plugin {
         });
         this.app.workspace.revealLeaf(this.builder.leaf);
     }
+    applyPlayerXpFromFrontmatter(
+        player: HomebrewCreature,
+        frontmatter: FrontMatterCache
+    ) {
+        if (frontmatter.xp != null) {
+            player.xp = Number(frontmatter.xp);
+            const cached = this.playerCreatures.get(player.name);
+            if (cached) cached.xp = player.xp;
+        }
+    }
+
+    applyPlayerHpFromFrontmatter(
+        player: HomebrewCreature,
+        frontmatter: FrontMatterCache
+    ) {
+        const maxHp = Number(frontmatter.hp ?? player.hp ?? 0);
+        const rawCurrent = frontmatter["current-hp"];
+        const currentHp =
+            rawCurrent != null
+                ? Number(rawCurrent)
+                : maxHp;
+        player.hp = maxHp;
+        player.currentHp = Math.max(0, Math.min(currentHp, maxHp));
+
+        const cached = this.playerCreatures.get(player.name);
+        if (cached) {
+            cached.max = cached.current_max = player.hp;
+            cached.hp = player.currentHp;
+        }
+    }
+
+    syncLinkedPlayerHp(creature: Creature) {
+        if (!creature.player) return;
+
+        const player = this.data.players.find((p) => p.name === creature.name);
+        if (!player) return;
+
+        const maxHp = creature.current_max ?? creature.max;
+        const currentHp = creature.hp;
+        player.hp = maxHp;
+        player.currentHp = currentHp;
+
+        const cached = this.playerCreatures.get(creature.name);
+        if (cached) {
+            cached.max = cached.current_max = maxHp;
+            cached.hp = currentHp;
+        }
+
+        if (this.hpSyncTimer) clearTimeout(this.hpSyncTimer);
+        this.hpSyncTimer = setTimeout(() => {
+            this.hpSyncTimer = null;
+            void this.flushLinkedPlayerHpSync(creature, player);
+        }, 300);
+    }
+
+    private async flushLinkedPlayerHpSync(
+        creature: Creature,
+        player: HomebrewCreature
+    ) {
+        await this.saveSettings();
+
+        if (!creature.path) return;
+
+        const file = this.app.vault.getAbstractFileByPath(creature.path);
+        if (!(file instanceof TFile)) return;
+
+        const cache = this.app.metadataCache.getFileCache(file);
+        const fm = cache?.frontmatter;
+        const maxHp = player.hp;
+        const currentHp = player.currentHp ?? player.hp;
+        if (
+            fm &&
+            Number(fm.hp) === maxHp &&
+            Number(fm["current-hp"] ?? fm.hp) === currentHp
+        ) {
+            return;
+        }
+
+        this.hpSyncFromVault = true;
+        try {
+            await this.app.fileManager.processFrontMatter(file, (f) => {
+                f.hp = maxHp;
+                f["current-hp"] = currentHp;
+            });
+        } finally {
+            this.hpSyncFromVault = false;
+        }
+    }
+
+    async applyEncounterXp() {
+        const totalXp = tracker.getDifficultyValue(this);
+        const rpgSystem = getRpgSystem(this);
+
+        if (totalXp <= 0) {
+            new Notice(
+                "Initiative Tracker: No encounter XP to award. Add monsters to the encounter or set player levels in settings."
+            );
+            return;
+        }
+
+        const encounterPlayers = tracker
+            .getOrderedCreatures()
+            .filter((c) => c.player && c.enabled);
+        if (!encounterPlayers.length) {
+            new Notice("Initiative Tracker: No players in the encounter.");
+            return;
+        }
+
+        const xpPerPlayer = Math.floor(totalXp / encounterPlayers.length);
+        if (xpPerPlayer <= 0) return;
+
+        let applied = 0;
+
+        for (const creature of encounterPlayers) {
+            const player = this.data.players.find(
+                (p) => p.name === creature.name
+            );
+
+            const currentXp = Number(player?.xp ?? creature.xp ?? 0);
+            const newXp = currentXp + xpPerPlayer;
+            creature.xp = newXp;
+            if (player) player.xp = newXp;
+
+            const cached = this.playerCreatures.get(creature.name);
+            if (cached) cached.xp = newXp;
+
+            const notePath = player?.path ?? creature.path;
+            if (notePath) {
+                await this.writePlayerXpToLinkedNote(
+                    { path: notePath },
+                    newXp
+                );
+            }
+            applied++;
+        }
+
+        await this.saveSettings();
+        tracker.getLogger()?.log(
+            `Distributed ${rpgSystem.formatDifficultyValue(xpPerPlayer, true)} to ${applied} player${applied > 1 ? "s" : ""}`
+        );
+        new Notice(
+            `Initiative Tracker: Added ${rpgSystem.formatDifficultyValue(xpPerPlayer, true)} to each player (${rpgSystem.formatDifficultyValue(totalXp, true)} total).`
+        );
+    }
+
+    async writePlayerXpToLinkedNote(
+        player: Pick<HomebrewCreature, "path">,
+        xp: number
+    ) {
+        if (!player.path) return;
+
+        const file = this.app.vault.getAbstractFileByPath(player.path);
+        if (!(file instanceof TFile)) return;
+
+        const cache = this.app.metadataCache.getFileCache(file);
+        const fm = cache?.frontmatter;
+        if (fm && Number(fm.xp) === xp) return;
+
+        this.hpSyncFromVault = true;
+        try {
+            await this.app.fileManager.processFrontMatter(file, (f) => {
+                f.xp = xp;
+            });
+        } finally {
+            this.hpSyncFromVault = false;
+        }
+    }
+
+    async writePlayerToLinkedNote(player: HomebrewCreature) {
+        if (!player.path) return;
+
+        const file = this.app.vault.getAbstractFileByPath(player.path);
+        if (!(file instanceof TFile)) return;
+
+        const maxHp = player.hp;
+        const currentHp = player.currentHp ?? player.hp;
+
+        this.hpSyncFromVault = true;
+        try {
+            await this.app.fileManager.processFrontMatter(file, (f) => {
+                f.hp = maxHp;
+                f["current-hp"] = currentHp;
+            });
+        } finally {
+            this.hpSyncFromVault = false;
+        }
+    }
+
     async updatePlayer(existing: HomebrewCreature, player: HomebrewCreature) {
+        if (player.currentHp == null && player.hp != null) {
+            player.currentHp = player.hp;
+        }
+
         if (!this.playerCreatures.has(existing.name)) {
             await this.savePlayer(player);
             return;
@@ -680,12 +873,17 @@ export default class InitiativeTracker extends Plugin {
         }
 
         await this.saveSettings();
+        await this.writePlayerToLinkedNote(player);
     }
 
     async savePlayer(player: HomebrewCreature) {
+        if (player.currentHp == null && player.hp != null) {
+            player.currentHp = player.hp;
+        }
         this.data.players.push(player);
         this.playerCreatures.set(player.name, Creature.from(player));
         await this.saveSettings();
+        await this.writePlayerToLinkedNote(player);
     }
     async savePlayers(...players: HomebrewCreature[]) {
         for (let monster of players) {
@@ -727,6 +925,7 @@ export default class InitiativeTracker extends Plugin {
     async saveSettings() {
         await this.saveData(this.data);
         tracker.setData(this.data);
+        tracker.setPlugin(this);
     }
     private getActiveCombatant(): CreatureView | undefined {
         if (

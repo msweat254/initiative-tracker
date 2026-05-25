@@ -1,32 +1,42 @@
-> 🥇 Our documentation has moved ***[here](https://plugins.javalent.com/it)***.
->
-> <a href='https://www.buymeacoffee.com/valentine195' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi3.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
----
+# Initiative Tracker Plus
 
-The Initiative Tracker plugin for **[Obsidian](https://obsidian.md)** allows you to keep track of initiative and turn order during combat encounters in tabletop role-playing games.
+A community fork of [Initiative Tracker](https://github.com/valentine195/obsidian-initiative-tracker) for **[Obsidian](https://obsidian.md)** — track initiative, HP, conditions, and XP during TTRPG combat encounters.
 
-With this plugin, you can add creatures and NPCs to the initiative tracker, and track their health, armor class, and other stats. The plugin also calculates experience points for creatures, and supports both custom and SRD creatures from the **[Fantasy Statblocks](https://github.com/javalent/fantasy-statblocks)** plugin.
+This fork is maintained independently and includes community enhancements on top of the original plugin.
 
 ## Features
-- Add and remove creatures from the encounter
-- Input creature name, HP, AC and initiative
-- Calculate creature XP based on level or challenge rating
-- Group identical creatures together to simplify the encounter
-- Set creature display names to differentiate identical creatures
-- Supports dice rolls to add random amount creatures
-- Keep track of creature HP, AC and status
-- Sort creatures by initiative automatically
-- Add several encounters in one code block
-- Automatically save and load encounters
-- And much, much more...
 
-### Quickstart
+- Add and remove creatures from encounters
+- Track HP, AC, initiative, and status conditions
+- Calculate encounter difficulty and XP by level or challenge rating
+- Award encounter XP directly to players
+- Group identical creatures and set display names
+- Support dice rolls for random creature counts
+- Sort by initiative automatically
+- Save and load multiple encounters in `encounter` code blocks
+- Integration with [Fantasy Statblocks](https://github.com/javalent/fantasy-statblocks) and [Dice Roller](https://github.com/javalent/obsidian-dice-roller)
 
-- Install the Initiative Tracker plugin in Obsidian.
-- Open a note where you want to keep track of your encounter.
-- Create a code block with the language set to \`\`\`encounter.
+## Installation
 
-````yaml
+### From Obsidian Community Plugins
+
+1. Open **Settings → Community plugins**.
+2. Browse and search for **Initiative Tracker Plus**.
+3. Install and enable the plugin.
+
+### Manual installation
+
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/YOUR_GITHUB_USERNAME/initiative-tracker-plus/releases).
+2. Create a folder named `initiative-tracker-plus` in your vault's `.obsidian/plugins/` directory.
+3. Copy the three files into that folder.
+4. Enable the plugin under **Settings → Community plugins**.
+
+## Quickstart
+
+1. Open a note where you want to track an encounter.
+2. Create a code block with the language set to `encounter`:
+
+````markdown
 ```encounter
 name: Example
 creatures:
@@ -34,19 +44,21 @@ creatures:
 ```
 ````
 
-- Add creatures to the encounter by name, dice roll or bestiary entry.
-- Launch the encounter by clicking on the play button, and start tracking initiative.
+3. Add creatures by name, dice roll, or bestiary entry.
+4. Click the play button to start tracking initiative.
 
-Check out the **[plugin documentation](https://plugins.javalent.com/it)** for more detailed instructions and examples.
+## Relationship to the original plugin
+
+This plugin is a **fork** of Initiative Tracker by Jeremy Valentine, also maintained by the [Obsidian TTRPG Community](https://github.com/Obsidian-TTRPG-Community/initiative-tracker).
+
+- **Plugin ID:** `initiative-tracker-plus` (do not install alongside the original `initiative-tracker` plugin)
+- **License:** GNU GPL v3 — see [LICENSE](LICENSE) and [NOTICE](NOTICE)
 
 ## Support
 
-If you encounter any issues, want to give back and help out, or have suggestions for new features, file an issue on the **[GitHub repository](https://github.com/valentine195/obsidian-initiative-tracker/issues)**.
+Report bugs and request features on this repository's [Issues](https://github.com/YOUR_GITHUB_USERNAME/initiative-tracker-plus/issues) page.
 
-### TTRPG plugins
+## Recommended companion plugins
 
-If you're using Obsidian to run/plan a TTRPG, you may find my other plugins useful:
-
-- **[Obsidian Leaflet](https://github.com/valentine195/obsidian-leaflet-plugin)** Adds interactive maps to Obsidian notes
-- **[Dice Roller](https://github.com/valentine195/obsidian-dice-roller)** Inline dice rolling for Obsidian
-- **[Fantasy Statblocks](https://github.com/valentine195/obsidian-5e-statblocks)** Format Statblocks inside Obsidian
+- **[Fantasy Statblocks](https://github.com/javalent/fantasy-statblocks)** — statblocks and bestiary integration
+- **[Dice Roller](https://github.com/javalent/obsidian-dice-roller)** — inline dice rolling

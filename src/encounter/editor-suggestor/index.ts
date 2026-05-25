@@ -115,7 +115,7 @@ export class EncounterSuggester extends EditorSuggest<string> {
                 ...this.context.end,
                 ch: this.context.start.ch + this.context.query.length
             },
-            "initiative-tracker"
+            this.plugin.manifest.id
         );
 
         this.context.editor.setCursor(

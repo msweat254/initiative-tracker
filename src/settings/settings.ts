@@ -444,7 +444,10 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                     text: `${player.level ?? DEFAULT_UNDEFINED}`
                 });
                 playerDiv.createDiv({
-                    text: `${player.hp ?? DEFAULT_UNDEFINED}`
+                    text:
+                        player.hp != null
+                            ? `${player.currentHp ?? player.hp}/${player.hp}`
+                            : `${DEFAULT_UNDEFINED}`
                 });
                 playerDiv.createDiv({
                     text: `${player.ac ?? DEFAULT_UNDEFINED}`
@@ -490,7 +493,10 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                     text: `${player.level ?? DEFAULT_UNDEFINED}`
                 });
                 playerDiv.createDiv({
-                    text: `${player.hp ?? DEFAULT_UNDEFINED}`
+                    text:
+                        player.max != null
+                            ? `${player.hp}/${player.current_max ?? player.max}`
+                            : `${DEFAULT_UNDEFINED}`
                 });
                 playerDiv.createDiv({
                     text: `${player.ac ?? DEFAULT_UNDEFINED}`
@@ -1091,6 +1097,20 @@ class NewPlayerModal extends Modal {
                     this.player.name = name ?? this.player.name;
                     this.player.ac = parseInt(ac ?? this.player.ac, 10);
                     this.player.hp = parseInt(hp ?? this.player.hp, 10);
+                    if (metaData.frontmatter.xp != null) {
+                        this.player.xp = parseInt(
+                            metaData.frontmatter.xp,
+                            10
+                        );
+                    }
+                    const currentRaw = metaData.frontmatter["current-hp"];
+                    this.player.currentHp =
+                        currentRaw != null
+                            ? parseInt(currentRaw, 10)
+                            : this.player.hp;
+                    if (this.player.currentHp > this.player.hp) {
+                        this.player.currentHp = this.player.hp;
+                    }
                     this.player.level = parseInt(
                         level ?? this.player.level,
                         10
@@ -1108,6 +1128,7 @@ class NewPlayerModal extends Modal {
         let nameInput: InputValidate,
             levelInput: InputValidate,
             hpInput: InputValidate,
+            currentHpInput: InputValidate,
             modInput: InputValidate;
 
         new Setting(contentEl)
@@ -1172,6 +1193,36 @@ class NewPlayerModal extends Modal {
             t.onChange((v) => {
                 t.inputEl.removeClass("has-error");
                 this.player.hp = Number(v);
+                if (
+                    this.player.currentHp != null &&
+                    this.player.currentHp > this.player.hp
+                ) {
+                    this.player.currentHp = this.player.hp;
+                }
+            });
+        });
+        new Setting(contentEl).setName("Current Hit Points").addText((t) => {
+            currentHpInput = {
+                input: t.inputEl,
+                validate: (i: HTMLInputElement) => {
+                    let error = false;
+                    if (isNaN(Number(i.value))) {
+                        i.addClass("has-error");
+                        error = true;
+                    }
+                    return error;
+                }
+            };
+            t.setValue(
+                `${this.player.currentHp ?? this.player.hp ?? ""}`
+            );
+            t.onChange((v) => {
+                t.inputEl.removeClass("has-error");
+                let current = Number(v);
+                if (this.player.hp != null && current > this.player.hp) {
+                    current = this.player.hp;
+                }
+                this.player.currentHp = current;
             });
         });
         new Setting(contentEl).setName("Armor Class").addText((t) => {
@@ -1210,6 +1261,7 @@ class NewPlayerModal extends Modal {
                     let error = this.validateInputs(
                         nameInput,
                         hpInput,
+                        currentHpInput,
                         modInput
                     );
                     if (error) {
@@ -1231,7 +1283,7 @@ class NewPlayerModal extends Modal {
             return b;
         });
 
-        this.validateInputs(nameInput, hpInput, modInput);
+        this.validateInputs(nameInput, hpInput, currentHpInput, modInput);
     }
     validateInputs(...inputs: InputValidate[]) {
         let error = false;

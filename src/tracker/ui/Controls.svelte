@@ -38,6 +38,12 @@
             .setTooltip("Stop")
             .onClick(() => tracker.setState(false));
     };
+    const awardXpButton = (node: HTMLElement) => {
+        new ExtraButtonComponent(node)
+            .setIcon("sparkles")
+            .setTooltip("Award encounter XP to players")
+            .onClick(() => void plugin.applyEncounterXp());
+    };
     const nextButton = (node: HTMLElement) => {
         new ExtraButtonComponent(node)
             .setIcon(FORWARD)
@@ -320,6 +326,7 @@
         {:else}
             <div use:playButton />
         {/if}
+        <div use:awardXpButton />
     </div>
     <div class="clean">
         {#if $logFile}

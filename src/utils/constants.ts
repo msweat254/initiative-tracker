@@ -2,9 +2,11 @@ import type { InitiativeTrackerData } from "src/settings/settings.types";
 import { Platform } from "obsidian";
 import { Conditions } from "./conditions";
 
-export const INITIATIVE_TRACKER_VIEW = "initiative-tracker-view";
-export const PLAYER_VIEW_VIEW = "initiative-tracker-player-view";
-export const CREATURE_TRACKER_VIEW = "initiative-tracker-creature-view";
+export const PLUGIN_ID = "initiative-tracker-plus";
+
+export const INITIATIVE_TRACKER_VIEW = "initiative-tracker-plus-view";
+export const PLAYER_VIEW_VIEW = "initiative-tracker-plus-player-view";
+export const CREATURE_TRACKER_VIEW = "initiative-tracker-plus-creature-view";
 
 export const MIN_WIDTH_FOR_HAMBURGER = 300;
 

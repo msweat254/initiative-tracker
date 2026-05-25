@@ -6,7 +6,7 @@
     import type { RpgSystem } from "src/utils/rpg-system/rpgSystem";
     import type InitiativeTracker from "src/main";
 
-    import { tracker } from "../stores/tracker";
+    import { tracker, getEncounterXpFromDifficulty } from "../stores/tracker";
     const { difficulty } = tracker;
 
     const plugin: InitiativeTracker = getContext("plugin");
@@ -18,11 +18,13 @@
         easing: cubicOut
     });
 
+    $: encounterXp = getEncounterXpFromDifficulty($dif);
+
     $: {
-        if ($dif.thresholds.last().minValue > 0) {
+        if ($dif?.thresholds?.last()?.minValue > 0) {
             difficultyBar.set(
                 Math.min(
-                    $dif.difficulty.value / $dif.thresholds.last().minValue,
+                    encounterXp / $dif.thresholds.last().minValue,
                     1
                 )
             );

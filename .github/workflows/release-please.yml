@@ -5,7 +5,7 @@ on:
         branches:
             - "main"
 env:
-    PLUGIN_NAME: initiative-tracker
+    PLUGIN_NAME: initiative-tracker-plus
 
 permissions:
     contents: write
