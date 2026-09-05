@@ -87,7 +87,7 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
             containerEl.addClass("initiative-tracker-settings");
 
             new Setting(containerEl)
-                .setName("Initiative Tracker Settings")
+                .setName("Initiative Tracker")
                 .setHeading();
 
             this._displayBase(containerEl.createDiv());
@@ -180,7 +180,7 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
 
     private _displayBase(containerEl: HTMLDivElement) {
         containerEl.empty();
-        new Setting(containerEl).setHeading().setName("Basic Settings");
+        new Setting(containerEl).setHeading().setName("Basic");
         new Setting(containerEl)
             .setName("Display Beginner Tips")
             .setDesc(
