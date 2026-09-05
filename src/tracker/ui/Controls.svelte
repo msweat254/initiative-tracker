@@ -11,6 +11,7 @@
         EXPAND,
         FORWARD,
         GROUP,
+        HP,
         NEW,
         PLAY,
         REDO,
@@ -77,6 +78,11 @@
             item.setIcon(REDO)
                 .setTitle("Reset HP / Status")
                 .onClick(() => tracker.reset());
+        });
+        menu.addItem((item) => {
+            item.setIcon(HP)
+                .setTitle("Set to Full")
+                .onClick(() => tracker.setToFull());
         });
         menu.addItem((item) => {
             item.setIcon(DICE)

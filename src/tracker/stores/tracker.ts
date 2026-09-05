@@ -943,16 +943,35 @@ function createTracker() {
             updateAndSave((creatures) => {
                 for (let creature of creatures) {
                     creature.current_ac = creature.ac;
-                    creature.hp = creature.current_max = creature.max;
                     creature.enabled = true;
                     creature.status.clear();
-                }
-                for (let creature of creatures) {
-                    if (creature.player && creature.path) {
-                        _plugin?.syncLinkedPlayerHp(creature);
+
+                    if (
+                        creature.player &&
+                        creature.path &&
+                        _plugin?.loadLinkedPlayerHpFromNote(creature)
+                    ) {
+                        continue;
                     }
+
+                    // Non-linked creatures: restore current/max from baseline max
+                    creature.hp = creature.current_max = creature.max;
                 }
                 void _logger?.log("Encounter HP & Statuses reset");
+                return creatures;
+            }),
+
+        setToFull: () =>
+            updateAndSave((creatures) => {
+                for (let creature of creatures) {
+                    // Heal to baseline max so max-HP damage doesn't leave them short
+                    creature.current_max = creature.max;
+                    creature.hp = creature.max;
+                    if (creature.player) {
+                        _plugin?.syncLinkedPlayerHp(creature, true);
+                    }
+                }
+                void _logger?.log("Encounter HP set to full");
                 return creatures;
             }),
 

@@ -55,7 +55,7 @@ export default class InitiativeTracker extends Plugin {
     playerCreatures: Map<string, Creature> = new Map();
     private lastCombatantLeaf: WorkspaceLeaf | null = null;
     watchers: Map<TFile, HomebrewCreature> = new Map();
-    private hpSyncTimer: number | null = null;
+    private hpSyncTimers: Map<string, number> = new Map();
     hpSyncFromVault = false;
     getRoller(str: string): { rollSync(): number } | null | undefined {
         if (!this.canUseDiceRoller) return;
@@ -715,11 +715,51 @@ export default class InitiativeTracker extends Plugin {
         }
     }
 
-    syncLinkedPlayerHp(creature: Creature) {
+    /**
+     * Reads hp / current-hp from the linked character note into the tracker
+     * creature. Returns false if the note cannot be read.
+     */
+    loadLinkedPlayerHpFromNote(creature: Creature): boolean {
+        if (!creature.player || !creature.path) return false;
+
+        const file = this.app.vault.getAbstractFileByPath(creature.path);
+        if (!(file instanceof TFile)) return false;
+
+        const frontmatter = this.app.metadataCache.getFileCache(file)
+            ?.frontmatter as PlayerNoteFrontmatter | undefined;
+        if (!frontmatter) return false;
+
+        const player = this.data.players.find((p) => p.name === creature.name);
+        if (player) {
+            this.applyPlayerHpFromFrontmatter(player, frontmatter);
+            creature.max = creature.current_max = player.hp;
+            creature.hp = player.currentHp ?? player.hp;
+        } else {
+            const maxHp = Number(frontmatter.hp ?? creature.max ?? 0);
+            const rawCurrent = frontmatter["current-hp"];
+            const currentHp =
+                rawCurrent != null ? Number(rawCurrent) : maxHp;
+            creature.max = creature.current_max = maxHp;
+            creature.hp = Math.max(0, Math.min(currentHp, maxHp));
+        }
+        return true;
+    }
+
+    /**
+     * Updates in-memory player HP from the tracker creature and schedules a
+     * write to the linked note. Pass `immediate: true` to flush now (e.g. Set to Full).
+     */
+    syncLinkedPlayerHp(creature: Creature, immediate = false) {
         if (!creature.player) return;
 
         const player = this.data.players.find((p) => p.name === creature.name);
         if (!player) return;
+
+        // Encounter creatures sometimes lose path; recover it from settings.
+        if (!creature.path && player.path) {
+            creature.path = player.path;
+        }
+        if (!creature.path && !player.path) return;
 
         const maxHp = creature.current_max ?? creature.max;
         const currentHp = creature.hp;
@@ -730,13 +770,26 @@ export default class InitiativeTracker extends Plugin {
         if (cached) {
             cached.max = cached.current_max = maxHp;
             cached.hp = currentHp;
+            if (!cached.path && creature.path) cached.path = creature.path;
         }
 
-        if (this.hpSyncTimer) window.clearTimeout(this.hpSyncTimer);
-        this.hpSyncTimer = window.setTimeout(() => {
-            this.hpSyncTimer = null;
+        const key = creature.path ?? player.path ?? creature.name;
+        const existing = this.hpSyncTimers.get(key);
+        if (existing != null) window.clearTimeout(existing);
+
+        if (immediate) {
+            this.hpSyncTimers.delete(key);
             void this.flushLinkedPlayerHpSync(creature, player);
-        }, 300);
+            return;
+        }
+
+        this.hpSyncTimers.set(
+            key,
+            window.setTimeout(() => {
+                this.hpSyncTimers.delete(key);
+                void this.flushLinkedPlayerHpSync(creature, player);
+            }, 300)
+        );
     }
 
     private async flushLinkedPlayerHpSync(
@@ -745,9 +798,10 @@ export default class InitiativeTracker extends Plugin {
     ) {
         await this.saveSettings();
 
-        if (!creature.path) return;
+        const path = creature.path ?? player.path;
+        if (!path) return;
 
-        const file = this.app.vault.getAbstractFileByPath(creature.path);
+        const file = this.app.vault.getAbstractFileByPath(path);
         if (!(file instanceof TFile)) return;
 
         const cache = this.app.metadataCache.getFileCache(file);
