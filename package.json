@@ -1,6 +1,6 @@
 {
     "name": "initiative-tracker-plus",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "TTRPG Initiative Tracker for Obsidian.md (community fork)",
     "types": "./dist/index.d.ts",
     "scripts": {
