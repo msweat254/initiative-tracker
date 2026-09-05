@@ -96,7 +96,11 @@ export class Dnd5eFleeMortalsRpgSystem extends RpgSystem {
   }
 
   isMinion(creature: GenericCreature) {
-    return "traits" in creature && creature.traits?.find((trait: any) => trait.name === "Minion");
+    return (
+      "traits" in creature &&
+      Array.isArray(creature.traits) &&
+      creature.traits.some((trait: { name: string }) => trait.name === "Minion")
+    );
   }
 
   getAveragePlayerLevel(playerLevels: number[]): number {
@@ -120,13 +124,15 @@ export class Dnd5eFleeMortalsRpgSystem extends RpgSystem {
       let cr = getFromCreatureOrBestiary(
         this.plugin,
         creature,
-        (c) => c?.cr ?? 0
+        (c): string | number => c?.cr ?? 0
       );
 
       const crFraction = convertFraction(creature.cr);
 
+      const crKey = String(cr);
       if (this.isMinion(creature)) {
-        const minionsPerStandard = MINION_CR_CONVERSION[cr].minionsPerStandard;
+        const minionsPerStandard =
+          MINION_CR_CONVERSION[crKey].minionsPerStandard;
         cr = crFraction * Math.floor(number / minionsPerStandard);
       } else {
         cr = crFraction * number;
@@ -151,7 +157,7 @@ export class Dnd5eFleeMortalsRpgSystem extends RpgSystem {
     const cr = getFromCreatureOrBestiary(
       this.plugin,
       creature,
-      (c) => c?.cr ?? "0"
+      (c): string | number => c?.cr ?? "0"
     );
 
     return convertFraction(cr);

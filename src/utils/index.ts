@@ -42,7 +42,7 @@ export function crToString(cr: string | number): string {
 export function getFromCreatureOrBestiary<T>(
     plugin: InitiativeTracker,
     creature: Creature | SRDMonster,
-    getter: (creature: Creature | SRDMonster | null) => T
+    getter: (creature: Creature | SRDMonster | null | undefined) => T
 ): T {
     const fromBase = getter(creature);
     if (fromBase) return fromBase;

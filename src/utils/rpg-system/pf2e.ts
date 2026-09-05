@@ -1,5 +1,5 @@
 import { RpgSystem } from "./rpgSystem";
-import { crToString, getFromCreatureOrBestiary } from "..";
+import { getFromCreatureOrBestiary } from "..";
 import type { DifficultyLevel, GenericCreature, DifficultyThreshold } from ".";
 import type InitiativeTracker from "../../main";
 
@@ -34,18 +34,6 @@ const XP_CREATURE_DIFFERENCES: Record<string, number> = {
     "4": 160
 };
 
-const XP_SIMPLE_HAZARD_DIFFERENCES: Record<string, number> = {
-    "-4": 2,
-    "-3": 3,
-    "-2": 4,
-    "-1": 6,
-    "0": 8,
-    "1": 12,
-    "2": 16,
-    "3": 24,
-    "4": 32
-};
-
 const PF2E_DND5E_DIFFICULTY_MAPPING: Record<string, string> = {
     trivial: "trivial",
     low: "easy",
@@ -75,17 +63,18 @@ export class Pathfinder2eRpgSystem extends RpgSystem {
         creature: GenericCreature,
         playerLevels?: number[]
     ): number {
-        const lvl = getFromCreatureOrBestiary(
+        const levelRaw = getFromCreatureOrBestiary(
             this.plugin,
             creature,
-            (c) => c?.level
-        )
-            ?.toString()
-            .split(" ")
-            .slice(-1);
-        if (lvl == null || lvl == undefined) return 0;
+            (c): number | string | undefined => c?.level
+        );
+        if (levelRaw == null) return 0;
+
+        const lvl = Number(String(levelRaw).split(" ").slice(-1)[0]);
+        if (Number.isNaN(lvl)) return 0;
+
         const partyLvl = Math.round(
-            playerLevels?.length ?? 0 > 0
+            (playerLevels?.length ?? 0) > 0
                 ? playerLevels.reduce((a, b) => a + b) / playerLevels.length
                 : 0
         );

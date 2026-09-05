@@ -2,7 +2,7 @@
     import { flip } from "svelte/animate";
     import { dndzone } from "svelte-dnd-action";
     import { NAME_HEADER, TableHeader } from "./table";
-    import { ButtonComponent, Setting, setIcon } from "obsidian";
+    import { ButtonComponent, Setting, setIcon, type App } from "obsidian";
     import { createEventDispatcher } from "svelte";
     import { SORT_NUMBER, SORT_STRING } from "src/utils";
     import { EditModal } from "./edit-modal";
@@ -19,6 +19,7 @@
     }>();
 
     export let headers: TableHeaderState[];
+    export let app: App;
     type DraggableHeader = { id: string; header: TableHeaderState };
     let items: DraggableHeader[] = [];
     for (const header of headers) {

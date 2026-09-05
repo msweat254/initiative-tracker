@@ -9,12 +9,12 @@ export function editorFromTextArea(
     textarea: HTMLTextAreaElement,
     facet?: Extension
 ) {
-    if (document.body.hasClass("theme-dark")) {
-        basicSetup.push(materialPalenight);
-    } else {
-        basicSetup.push(basicLightTheme);
-    }
     const extensions = [...basicSetup];
+    if (activeDocument.body.hasClass("theme-dark")) {
+        extensions.push(materialPalenight);
+    } else {
+        extensions.push(basicLightTheme);
+    }
     if (facet) extensions.push(facet);
     let view = new EditorView({
         state: EditorState.create({
@@ -23,11 +23,10 @@ export function editorFromTextArea(
         })
     });
     textarea.parentNode!.appendChild(view.dom);
-    textarea.style.display = "none";
+    textarea.addClass("initiative-tracker-editor-source");
     if (textarea.form)
         textarea.form.addEventListener("submit", () => {
             textarea.value = view.state.doc.toString();
         });
     return view;
 }
-

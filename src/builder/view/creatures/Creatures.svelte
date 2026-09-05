@@ -93,8 +93,11 @@
                                     await plugin.saveSettings();
                                     filterStore.resetLayout();
                                 } else {
-                                    console.log(
-                                        ...validate.errors.map((e) => e.message)
+                                    console.error(
+                                        "Builder state schema errors:",
+                                        ...(validate.errors?.map(
+                                            (e) => e.message
+                                        ) ?? [])
                                     );
                                     new Notice(
                                         "This file does not match the builder state schema."
@@ -110,7 +113,7 @@
         menu.showAtMouseEvent(evt.detail);
     };
     const openFiltersModal = () => {
-        const modal = new FiltersModal($layout, filterStore);
+        const modal = new FiltersModal(plugin.app, $layout, filterStore);
         modal.open();
         modal.onClose = () => {
             if (modal.canceled) return;
@@ -118,7 +121,10 @@
         };
     };
     const openHeadersModal = () => {
-        const modal = new HeadersModal($table.map((t) => t.toState()));
+        const modal = new HeadersModal(
+            plugin.app,
+            $table.map((t) => t.toState())
+        );
         modal.open();
         modal.onClose = () => {
             if (modal.canceled) return;

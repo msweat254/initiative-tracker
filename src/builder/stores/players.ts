@@ -58,11 +58,14 @@ function createPlayers() {
             }),
         addFromState: (state: CreatureState) =>
             update((players) => {
-                const item = state as Player;
-                item.isPlayer = true;
-                if (!item.count || item.count <= 0) {
-                    item.count = 1;
-                }
+                const item: Player = {
+                    ...state,
+                    name: state.name ?? "",
+                    level: 1,
+                    isPlayer: true,
+                    enabled: state.enabled ?? true,
+                    count: 1
+                };
                 players.push(item);
                 return players;
             }),
@@ -79,13 +82,13 @@ function createPlayers() {
         set: (item: CombinedPlayer, count: number) =>
             update((players) => {
                 const player = players.find((p) => p == item);
-                player!.count = count;
+                if (player) player.count = count;
                 return players;
             }),
         setLevel: (item: CombinedPlayer, level: number) =>
             update((players) => {
                 const player = players.find((p) => p == item);
-                player!.level = level;
+                if (player) player.level = level;
                 return players;
             }),
 
@@ -101,7 +104,7 @@ function createPlayers() {
         toggleEnabled: (item: CombinedPlayer) =>
             update((players) => {
                 const player = players.find((p) => p == item);
-                player!.enabled = !player!.enabled;
+                if (player) player.enabled = !player.enabled;
                 return players;
             })
     };

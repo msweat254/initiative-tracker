@@ -68,7 +68,7 @@ export class EditModal extends Modal {
                     })
                 );
             const component = new TextAreaComponent(this.contentEl).setValue(
-                this.header.func!
+                this.header.func ?? ""
             );
             component.inputEl.addClass("initiative-tracker-textarea");
             this.editor = editorFromTextArea(

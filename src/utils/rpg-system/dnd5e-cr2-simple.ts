@@ -93,8 +93,12 @@ export class Dnd5eCr2SimpleRpgSystem extends RpgSystem {
   }
 
   getCreatureDifficulty(creature: GenericCreature, _?: number[]): number {
-    const cr = getFromCreatureOrBestiary(this.plugin, creature, c => c?.cr ?? "0");
-    return POWER_BY_CR[cr] ?? 0;
+    const cr = getFromCreatureOrBestiary(
+      this.plugin,
+      creature,
+      (c): string | number => c?.cr ?? "0"
+    );
+    return POWER_BY_CR[String(cr)] ?? 0;
   }
 
   getAdditionalCreatureDifficultyStats(
@@ -102,7 +106,10 @@ export class Dnd5eCr2SimpleRpgSystem extends RpgSystem {
       _?: number[]
   ): string[] {
       const cr = getFromCreatureOrBestiary(
-          this.plugin, creature, c => c?.cr ?? 0);
+          this.plugin,
+          creature,
+          (c): string | number => c?.cr ?? 0
+      );
       return [`${crToString(cr)} CR`];
   }
 

@@ -39,10 +39,10 @@ export default class BuilderView extends ItemView {
                 : state?.encounter
         ) as [SRDMonster, number][] | undefined;
         if (entries && Array.isArray(entries)) encounter.setMultiple(entries);
-        super.setState(state, result);
+        await super.setState(state, result);
     }
     ui: Builder;
-    async onOpen() {
+    onOpen(): Promise<void> {
         if (
             this.plugin.canUseStatBlocks &&
             !window["FantasyStatblocks"].isResolved()
@@ -73,9 +73,11 @@ export default class BuilderView extends ItemView {
                 }
             });
         }
+        return Promise.resolve();
     }
-    async onClose() {
+    onClose(): Promise<void> {
         this.ui?.$destroy();
+        return Promise.resolve();
     }
     getDisplayText(): string {
         return "Encounter Builder";

@@ -8,8 +8,8 @@ import type InitiativeTracker from "src/main";
 
 export function getId() {
     return "ID_xyxyxyxyxyxy".replace(/[xy]/g, function (c) {
-        var r = (Math.random() * 16) | 0,
-            v = c == "x" ? r : (r & 0x3) | 0x8;
+        const r = (Math.random() * 16) | 0;
+        const v = c == "x" ? r : (r & 0x3) | 0x8;
         return v.toString(16);
     });
 }
@@ -109,9 +109,7 @@ export class Creature {
         this.cr = creature.cr;
         this.id = creature.id ?? getId();
         if ("statblock-link" in creature) {
-            this["statblock-link"] = (creature as any)[
-                "statblock-link"
-            ] as string;
+            this["statblock-link"] = creature["statblock-link"];
         }
         if ("hit_dice" in creature && typeof creature.hit_dice == "string") {
             this.hit_dice = creature.hit_dice;
@@ -180,20 +178,32 @@ export class Creature {
     }
 
     static from(creature: HomebrewCreature | SRDMonster) {
-        const modifier =
-            "modifier" in creature
-                ? creature.modifier
-                : Math.floor(
-                      (("stats" in creature && creature.stats.length > 1
-                          ? creature.stats[1]
-                          : 10) -
-                          10) /
-                          2
-                  );
-        return new Creature({
-            ...creature,
-            modifier: modifier
-        });
+        let modifier: number | number[] = 0;
+        if ("modifier" in creature && creature.modifier != null) {
+            modifier = creature.modifier;
+        } else {
+            const stats = Array.isArray(creature.stats)
+                ? creature.stats
+                : undefined;
+            const dex = stats && stats.length > 1 ? stats[1] : 10;
+            modifier = Math.floor((dex - 10) / 2);
+        }
+
+        const rawLevel = creature.level;
+        const level =
+            typeof rawLevel === "number"
+                ? rawLevel
+                : typeof rawLevel === "string"
+                  ? Number(rawLevel)
+                  : undefined;
+
+        const homebrew: HomebrewCreature = {
+            ...(creature as HomebrewCreature),
+            modifier,
+            level:
+                level != null && !Number.isNaN(level) ? level : undefined
+        };
+        return new Creature(homebrew);
     }
 
     update(creature: HomebrewCreature) {

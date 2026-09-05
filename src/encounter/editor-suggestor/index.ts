@@ -51,7 +51,7 @@ export class EncounterSuggester extends EditorSuggest<string> {
             case SuggestContext.Party:
                 suggestions = [
                     "false",
-                    ...this.plugin.data.parties?.map((p) => p.name)
+                    ...(this.plugin.data.parties?.map((p) => p.name) ?? [])
                 ];
                 break;
             case SuggestContext.RollHP:
@@ -76,7 +76,7 @@ export class EncounterSuggester extends EditorSuggest<string> {
     renderSuggestion(text: string, el: HTMLElement) {
         el.createSpan({ text });
     }
-    selectSuggestion(value: string, evt: MouseEvent | KeyboardEvent): void {
+    selectSuggestion(value: string, _evt: MouseEvent | KeyboardEvent): void {
         if (!this.context) return;
         switch (this._context) {
             case SuggestContext.None: {
@@ -128,7 +128,7 @@ export class EncounterSuggester extends EditorSuggest<string> {
     onTrigger(
         cursor: EditorPosition,
         editor: Editor,
-        file: TFile
+        _file: TFile
     ): EditorSuggestTriggerInfo | null {
         this._context = SuggestContext.None;
         const range = editor.getRange({ line: 0, ch: 0 }, cursor);
@@ -161,7 +161,7 @@ export class EncounterSuggester extends EditorSuggest<string> {
 
             //parse as yaml so we can use this state later, e.g. to get already loaded players
             this._encounter = parseYaml(doc.slice(0, end).join("\n"));
-        } catch (e) {
+        } catch {
             this._encounter = {};
         }
         if (!this._encounter) this._encounter = {};
@@ -171,7 +171,7 @@ export class EncounterSuggester extends EditorSuggest<string> {
         if (/^name/.test(line)) return null;
         if (/^rollHP:/.test(line)) {
             this._context = SuggestContext.RollHP;
-            const [_, query] = line.match(/^rollHP:\s?(.*)$/);
+            const query = line.match(/^rollHP:\s?(.*)$/)?.[1] ?? "";
             if (query === "true" || query === "false") return null;
             return {
                 end: cursor,
@@ -184,7 +184,7 @@ export class EncounterSuggester extends EditorSuggest<string> {
         }
         if (/^party:/.test(line)) {
             this._context = SuggestContext.Party;
-            const [_, query] = line.match(/^party:\s?(.*)$/);
+            const query = line.match(/^party:\s?(.*)$/)?.[1] ?? "";
             if (this.plugin.data.parties.find((p) => p.name === query))
                 return null;
             return {
@@ -217,7 +217,7 @@ export class EncounterSuggester extends EditorSuggest<string> {
             //panic
             if (!found) return null;
 
-            const [_, query] = line.match(/^\s+- (?:\d:)?(.*)$/);
+            const query = line.match(/^\s+- (?:\d:)?(.*)$/)?.[1] ?? "";
             return {
                 end: cursor,
                 start: {

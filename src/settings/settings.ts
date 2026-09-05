@@ -18,7 +18,6 @@ import {
     AC,
     Conditions,
     DEFAULT_UNDEFINED,
-    EDIT,
     HP,
     INITIATIVE,
     OVERFLOW_TYPE,
@@ -34,14 +33,62 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
     constructor(private plugin: InitiativeTracker) {
         super(plugin.app, plugin);
     }
-    async display(): Promise<void> {
-        try {
-            let { containerEl } = this;
 
+    /**
+     * Obsidian 1.13+ declarative settings API. Keeps settings searchable while
+     * rendering the existing custom UI (players, parties, statuses, etc.).
+     * Older Obsidian versions ignore this and use {@link display}.
+     */
+    getSettingDefinitions(): import("obsidian").SettingDefinitionItem[] {
+        return [
+            {
+                name: "Initiative Tracker",
+                desc: "Configure combat tracking, players, parties, statuses, logging, RPG system, and plugin integrations.",
+                aliases: [
+                    "beginner tips",
+                    "encounter difficulty",
+                    "equivalent creatures",
+                    "statblock link",
+                    "clamp hp",
+                    "overflow healing",
+                    "unconscious",
+                    "temporary hp",
+                    "player hp",
+                    "roll hp",
+                    "battle log",
+                    "initiative ties",
+                    "players",
+                    "parties",
+                    "statuses",
+                    "conditions",
+                    "encounter builder",
+                    "rpg system",
+                    "fantasy statblocks",
+                    "dice roller",
+                    "initiative formula"
+                ],
+                render: (setting) => {
+                    const parent = setting.settingEl.parentElement;
+                    if (!parent) return;
+                    setting.settingEl.remove();
+                    void this.populateContainer(parent);
+                }
+            }
+        ];
+    }
+
+    display(): void {
+        void this.populateContainer(this.containerEl);
+    }
+
+    private async populateContainer(containerEl: HTMLElement): Promise<void> {
+        try {
             containerEl.empty();
             containerEl.addClass("initiative-tracker-settings");
 
-            containerEl.createEl("h2", { text: "Initiative Tracker Settings" });
+            new Setting(containerEl)
+                .setName("Initiative Tracker Settings")
+                .setHeading();
 
             this._displayBase(containerEl.createDiv());
             if (!this.plugin.data.openState) {
@@ -54,11 +101,11 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                     builder: true
                 };
             }
-            this._displayBattle(
+            await this._displayBattle(
                 containerEl.createEl("details", {
                     cls: "initiative-tracker-additional-container",
                     attr: {
-                        ...(this.plugin.data.openState.player
+                        ...(this.plugin.data.openState.battle
                             ? { open: true }
                             : {})
                     }
@@ -104,7 +151,7 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                     }
                 })
             );
-            this._displayIntegrations(
+            await this._displayIntegrations(
                 containerEl.createEl("details", {
                     cls: "initiative-tracker-additional-container",
                     attr: {
@@ -140,12 +187,10 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 "Display instructions in the initiative tracker, helping you get used to the workflow."
             )
             .addToggle((t) => {
-                t.setValue(this.plugin.data.beginnerTips).onChange(
-                    async (v) => {
-                        this.plugin.data.beginnerTips = v;
-                        await this.plugin.saveSettings();
-                    }
-                );
+                t.setValue(this.plugin.data.beginnerTips).onChange((v) => {
+                    this.plugin.data.beginnerTips = v;
+                    void this.plugin.saveSettings();
+                });
             });
         new Setting(containerEl)
             .setName("Display Encounter Difficulty")
@@ -153,12 +198,10 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 "Display encounter difficulty based on creature CR and player level. Creatures without CR or level will not be considered in the calculation."
             )
             .addToggle((t) => {
-                t.setValue(this.plugin.data.displayDifficulty).onChange(
-                    async (v) => {
-                        this.plugin.data.displayDifficulty = v;
-                        await this.plugin.saveSettings();
-                    }
-                );
+                t.setValue(this.plugin.data.displayDifficulty).onChange((v) => {
+                    this.plugin.data.displayDifficulty = v;
+                    void this.plugin.saveSettings();
+                });
             });
         new Setting(containerEl)
             .setName("Roll Equivalent Creatures Together")
@@ -166,9 +209,9 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 "Equivalent creatures (same Name and AC) will roll the same initiative by default."
             )
             .addToggle((t) => {
-                t.setValue(this.plugin.data.condense).onChange(async (v) => {
+                t.setValue(this.plugin.data.condense).onChange((v) => {
                     this.plugin.data.condense = v;
-                    await this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 });
             });
 
@@ -179,9 +222,9 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
             )
             .addToggle((t) => {
                 t.setValue(this.plugin.data.preferStatblockLink).onChange(
-                    async (v) => {
+                    (v) => {
                         this.plugin.data.preferStatblockLink = v;
-                        await this.plugin.saveSettings();
+                        void this.plugin.saveSettings();
                     }
                 );
             });
@@ -191,7 +234,7 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
         additionalContainer.ontoggle = () => {
             this.plugin.data.openState.battle = additionalContainer.open;
         };
-        const summary = additionalContainer.createEl("summary");
+        const summary = additionalContainer.createEl("summary", { cls: "summary" });
         new Setting(summary).setHeading().setName("Battle");
         summary.createDiv("collapser").createDiv("handle");
         new Setting(additionalContainer)
@@ -200,9 +243,9 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 "When a creature takes damage that would reduce its HP below 0, its HP is set to 0 instead."
             )
             .addToggle((t) => {
-                t.setValue(this.plugin.data.clamp).onChange(async (v) => {
+                t.setValue(this.plugin.data.clamp).onChange((v) => {
                     this.plugin.data.clamp = v;
-                    await this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 });
             });
         new Setting(additionalContainer)
@@ -215,9 +258,9 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 d.addOption(OVERFLOW_TYPE.temp, "Add to temp HP");
                 d.addOption(OVERFLOW_TYPE.current, "Add to current HP");
                 d.setValue(this.plugin.data.hpOverflow ?? OVERFLOW_TYPE.ignore);
-                d.onChange(async (v) => {
+                d.onChange((v) => {
                     this.plugin.data.hpOverflow = v;
-                    this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 });
             });
         new Setting(additionalContainer)
@@ -226,9 +269,9 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 'When a creature takes damage that would reduce its HP below 0, it gains the "Unconscious" status effect.'
             )
             .addToggle((t) => {
-                t.setValue(this.plugin.data.autoStatus).onChange(async (v) => {
+                t.setValue(this.plugin.data.autoStatus).onChange((v) => {
                     this.plugin.data.autoStatus = v;
-                    await this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 });
             });
         new Setting(additionalContainer)
@@ -237,12 +280,10 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 "Any temporary HP added to a creature will be added on top of existing temporary HP."
             )
             .addToggle((t) => {
-                t.setValue(this.plugin.data.additiveTemp).onChange(
-                    async (v) => {
-                        this.plugin.data.additiveTemp = v;
-                        await this.plugin.saveSettings();
-                    }
-                );
+                t.setValue(this.plugin.data.additiveTemp).onChange((v) => {
+                    this.plugin.data.additiveTemp = v;
+                    void this.plugin.saveSettings();
+                });
             });
         new Setting(additionalContainer)
             .setName("Display Player HP in Player View")
@@ -251,9 +292,9 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
             )
             .addToggle((t) => {
                 t.setValue(this.plugin.data.diplayPlayerHPValues).onChange(
-                    async (v) => {
+                    (v) => {
                         this.plugin.data.diplayPlayerHPValues = v;
-                        await this.plugin.saveSettings();
+                        void this.plugin.saveSettings();
                     }
                 );
             });
@@ -271,9 +312,9 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 })
             )
             .addToggle((t) => {
-                t.setValue(this.plugin.data.rollHP).onChange(async (v) => {
+                t.setValue(this.plugin.data.rollHP).onChange((v) => {
                     this.plugin.data.rollHP = v;
-                    await this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 });
             });
 
@@ -283,9 +324,9 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 "Actions taken during battle will be logged to the specified log folder."
             )
             .addToggle((t) =>
-                t.setValue(this.plugin.data.logging).onChange(async (v) => {
+                t.setValue(this.plugin.data.logging).onChange((v) => {
                     this.plugin.data.logging = v;
-                    await this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 })
             );
 
@@ -295,7 +336,7 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
         new Setting(additionalContainer)
             .setName("Log Folder")
             .setDesc(
-                createFragment(async (e) => {
+                createFragment((e) => {
                     e.createSpan({
                         text: "A new note will be created in this folder for each battle."
                     });
@@ -325,9 +366,9 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                     t,
                     folders as TFolder[]
                 );
-                modal.onSelect(async ({ item }) => {
+                modal.onSelect(({ item }) => {
                     this.plugin.data.logFolder = normalizePath(item.path);
-                    await this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                     this.display();
                 });
             });
@@ -343,9 +384,9 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 d.setValue(
                     this.plugin.data.resolveTies ?? RESOLVE_TIES.playerFirst
                 );
-                d.onChange(async (v) => {
+                d.onChange((v) => {
                     this.plugin.data.resolveTies = v;
-                    this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 });
             });
     }
@@ -354,7 +395,9 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
         additionalContainer.ontoggle = () => {
             this.plugin.data.openState.player = additionalContainer.open;
         };
-        const summary = additionalContainer.createEl("summary");
+        const summary = additionalContainer.createEl("summary", {
+            cls: "summary"
+        });
         new Setting(summary).setHeading().setName("Players");
         summary.createDiv("collapser").createDiv("handle");
         new Setting(additionalContainer)
@@ -366,18 +409,20 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 let b = button
                     .setTooltip("Add Player")
                     .setButtonText("+")
-                    .onClick(async () => {
+                    .onClick(() => {
                         const modal = new NewPlayerModal(this.plugin);
                         modal.open();
-                        modal.onClose = async () => {
-                            if (!modal.saved) return;
+                        modal.onClose = () => {
+                            void (async () => {
+                                if (!modal.saved) return;
 
-                            await this.plugin.savePlayer({
-                                ...modal.player,
-                                player: true
-                            });
+                                await this.plugin.savePlayer({
+                                    ...modal.player,
+                                    player: true
+                                });
 
-                            this._displayPlayers(additionalContainer);
+                                this._displayPlayers(additionalContainer);
+                            })();
                         };
                     });
 
@@ -396,13 +441,11 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                     text: "No saved players! Create one to see it here."
                 });
         } else {
-            const headers = playerView.createDiv(
-                "initiative-tracker-player headers"
-            );
-
-            headers.createDiv({ text: "Name" });
+            // Flat grid cells (no per-row wrappers) for Obsidian CSS compatibility
+            playerView.createDiv({ text: "Name", cls: "headers" });
             setIcon(
-                headers.createDiv({
+                playerView.createDiv({
+                    cls: "headers",
                     attr: {
                         "aria-label": "Level"
                     }
@@ -410,7 +453,8 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 "swords"
             );
             setIcon(
-                headers.createDiv({
+                playerView.createDiv({
+                    cls: "headers",
                     attr: {
                         "aria-label": "Max HP"
                     }
@@ -418,7 +462,8 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 HP
             );
             setIcon(
-                headers.createDiv({
+                playerView.createDiv({
+                    cls: "headers",
                     attr: {
                         "aria-label": "Armor Class"
                     }
@@ -426,36 +471,34 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 AC
             );
             setIcon(
-                headers.createDiv({
+                playerView.createDiv({
+                    cls: "headers",
                     attr: {
                         "aria-label": "Initiative Modifier"
                     }
                 }),
                 INITIATIVE
             );
-            headers.createDiv();
+            playerView.createDiv({ cls: "headers" });
 
             for (let player of this.plugin.data.players) {
-                const playerDiv = playerView.createDiv(
-                    "initiative-tracker-player"
-                );
-                playerDiv.createDiv({ text: player.name });
-                playerDiv.createDiv({
+                playerView.createDiv({ text: player.name });
+                playerView.createDiv({
                     text: `${player.level ?? DEFAULT_UNDEFINED}`
                 });
-                playerDiv.createDiv({
+                playerView.createDiv({
                     text:
                         player.hp != null
                             ? `${player.currentHp ?? player.hp}/${player.hp}`
                             : `${DEFAULT_UNDEFINED}`
                 });
-                playerDiv.createDiv({
+                playerView.createDiv({
                     text: `${player.ac ?? DEFAULT_UNDEFINED}`
                 });
-                playerDiv.createDiv({
+                playerView.createDiv({
                     text: `${player.modifier ?? DEFAULT_UNDEFINED}`
                 });
-                const icons = playerDiv.createDiv(
+                const icons = playerView.createDiv(
                     "initiative-tracker-player-icon"
                 );
                 new ExtraButtonComponent(icons.createDiv())
@@ -464,47 +507,46 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                     .onClick(() => {
                         const modal = new NewPlayerModal(this.plugin, player);
                         modal.open();
-                        modal.onClose = async () => {
-                            if (!modal.saved) return;
-                            await this.plugin.updatePlayer(
-                                player,
-                                modal.player
-                            );
+                        modal.onClose = () => {
+                            void (async () => {
+                                if (!modal.saved) return;
+                                await this.plugin.updatePlayer(
+                                    player,
+                                    modal.player
+                                );
 
-                            this._displayPlayers(additionalContainer);
+                                this._displayPlayers(additionalContainer);
+                            })();
                         };
                     });
                 new ExtraButtonComponent(icons.createDiv())
                     .setIcon("trash")
                     .setTooltip("Delete")
-                    .onClick(async () => {
-                        this.plugin.deletePlayer(player);
-
-                        await this.plugin.saveSettings();
-                        this._displayPlayers(additionalContainer);
+                    .onClick(() => {
+                        void (async () => {
+                            await this.plugin.deletePlayer(player);
+                            this._displayPlayers(additionalContainer);
+                        })();
                     });
             }
             for (let [name, player] of this.plugin.statblock_players) {
-                const playerDiv = playerView.createDiv(
-                    "initiative-tracker-player"
-                );
-                playerDiv.createDiv({ text: name });
-                playerDiv.createDiv({
+                playerView.createDiv({ text: name });
+                playerView.createDiv({
                     text: `${player.level ?? DEFAULT_UNDEFINED}`
                 });
-                playerDiv.createDiv({
+                playerView.createDiv({
                     text:
                         player.max != null
                             ? `${player.hp}/${player.current_max ?? player.max}`
                             : `${DEFAULT_UNDEFINED}`
                 });
-                playerDiv.createDiv({
+                playerView.createDiv({
                     text: `${player.ac ?? DEFAULT_UNDEFINED}`
                 });
-                playerDiv.createDiv({
+                playerView.createDiv({
                     text: `${player.modifier ?? DEFAULT_UNDEFINED}`
                 });
-                const icons = playerDiv.createDiv({
+                const icons = playerView.createDiv({
                     cls: "initiative-tracker-player-icon imported",
                     attr: {
                         "aria-label": "Imported from Fantasy Statblocks"
@@ -519,18 +561,18 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
         additionalContainer.ontoggle = () => {
             this.plugin.data.openState.player = additionalContainer.open;
         };
-        const summary = additionalContainer.createEl("summary");
+        const summary = additionalContainer.createEl("summary", { cls: "summary" });
         new Setting(summary).setHeading().setName("Encounters");
         summary.createDiv("collapser").createDiv("handle");
         const explanation = additionalContainer.createDiv(
             "initiative-tracker-explanation"
         );
-        explanation.createEl("span", {
+        explanation.createSpan({
             text: "The encounter builder allows you to quickly create encounters that can be saved for later use or immediately launched into a battle."
         });
         explanation.createEl("br");
         explanation.createEl("br");
-        explanation.createEl("span", {
+        explanation.createSpan({
             text: "It can be opened using the sidebar shortcut (if enabled) or by using the Open Encounter Builder command."
         });
         new Setting(additionalContainer)
@@ -559,9 +601,9 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 d.setValue(
                     this.plugin.data.rpgSystem ?? RpgSystemSetting.Dnd5e
                 );
-                d.onChange(async (v) => {
+                d.onChange((v) => {
                     this.plugin.data.rpgSystem = v;
-                    this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 });
             });
 
@@ -618,10 +660,12 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                         })
                     )
                     .addExtraButton((b) => {
-                        b.setIcon("trash").onClick(async () => {
-                            this.plugin.removeEncounter(name);
-                            await this.plugin.saveSettings();
-                            this._displayBuilder(additionalContainer);
+                        b.setIcon("trash").onClick(() => {
+                            void (async () => {
+                                this.plugin.removeEncounter(name);
+                                await this.plugin.saveSettings();
+                                this._displayBuilder(additionalContainer);
+                            })();
                         });
                     });
             }
@@ -632,18 +676,18 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
         additionalContainer.ontoggle = () => {
             this.plugin.data.openState.party = additionalContainer.open;
         };
-        const summary = additionalContainer.createEl("summary");
+        const summary = additionalContainer.createEl("summary", { cls: "summary" });
         new Setting(summary).setHeading().setName("Parties");
         summary.createDiv("collapser").createDiv("handle");
         const explanation = additionalContainer.createDiv(
             "initiative-tracker-explanation"
         );
-        explanation.createEl("span", {
+        explanation.createSpan({
             text: "Parties allow you to create different groups of your players. Each player can be a member of multiple parties."
         });
         explanation.createEl("br");
         explanation.createEl("br");
-        explanation.createEl("span", {
+        explanation.createSpan({
             text: "You can set a default party for encounters to use, or specify the party for the encounter in the encounter block. While running an encounter in the tracker, you can change the active party, allowing you to quickly switch which players are in combat."
         });
         new Setting(additionalContainer)
@@ -657,9 +701,9 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                     d.addOption(party.name, party.name);
                 }
                 d.setValue(this.plugin.data.defaultParty ?? "none");
-                d.onChange(async (v) => {
+                d.onChange((v) => {
                     this.plugin.data.defaultParty = v == "none" ? null : v;
-                    this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 });
             });
         new Setting(additionalContainer)
@@ -668,35 +712,37 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 let b = button
                     .setTooltip("Add Party")
                     .setButtonText("+")
-                    .onClick(async () => {
+                    .onClick(() => {
                         const modal = new PartyModal(this.plugin);
                         modal.open();
-                        modal.onClose = async () => {
-                            if (modal.canceled) return;
-                            if (!modal.party.name || !modal.party.name.length)
-                                return;
-                            if (
-                                this.plugin.data.parties.filter(
-                                    (party) => party.name == modal.party.name
-                                )
-                            ) {
-                                const map = new Map(
-                                    [...this.plugin.data.parties].map((c) => [
-                                        c.name,
-                                        c
-                                    ])
-                                );
-                                map.set(modal.party.name, modal.party);
-                                this.plugin.data.parties = Array.from(
-                                    map.values()
-                                );
-                            } else {
-                                this.plugin.data.parties.push(modal.party);
-                            }
+                        modal.onClose = () => {
+                            void (async () => {
+                                if (modal.canceled) return;
+                                if (!modal.party.name || !modal.party.name.length)
+                                    return;
+                                if (
+                                    this.plugin.data.parties.filter(
+                                        (party) => party.name == modal.party.name
+                                    )
+                                ) {
+                                    const map = new Map(
+                                        [...this.plugin.data.parties].map((c) => [
+                                            c.name,
+                                            c
+                                        ])
+                                    );
+                                    map.set(modal.party.name, modal.party);
+                                    this.plugin.data.parties = Array.from(
+                                        map.values()
+                                    );
+                                } else {
+                                    this.plugin.data.parties.push(modal.party);
+                                }
 
-                            await this.plugin.saveSettings();
+                                await this.plugin.saveSettings();
 
-                            this._displayParties(additionalContainer);
+                                this._displayParties(additionalContainer);
+                            })();
                         };
                     });
 
@@ -722,60 +768,70 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                         b.setIcon("pencil").onClick(() => {
                             const modal = new PartyModal(this.plugin, party);
                             modal.open();
-                            modal.onClose = async () => {
-                                if (modal.canceled) return;
-                                if (
-                                    !modal.party.name ||
-                                    !modal.party.name.length
-                                )
-                                    return;
+                            modal.onClose = () => {
+                                void (async () => {
+                                    if (modal.canceled) return;
+                                    if (
+                                        !modal.party.name ||
+                                        !modal.party.name.length
+                                    )
+                                        return;
 
-                                this.plugin.data.parties.splice(
-                                    this.plugin.data.parties.indexOf(party),
-                                    1,
-                                    modal.party
-                                );
-                                if (
-                                    this.plugin.data.parties.filter(
-                                        (s) => s.name == modal.party.name
-                                    ).length > 1
-                                ) {
+                                    this.plugin.data.parties.splice(
+                                        this.plugin.data.parties.indexOf(party),
+                                        1,
+                                        modal.party
+                                    );
                                     if (
                                         this.plugin.data.parties.filter(
-                                            (status) =>
-                                                status.name == modal.party.name
-                                        )
+                                            (s) => s.name == modal.party.name
+                                        ).length > 1
                                     ) {
-                                        const map = new Map(
-                                            this.plugin.data.parties.map(
-                                                (c) => [c.name, c]
+                                        if (
+                                            this.plugin.data.parties.filter(
+                                                (status) =>
+                                                    status.name ==
+                                                    modal.party.name
                                             )
-                                        );
-                                        map.set(modal.party.name, modal.party);
-                                        this.plugin.data.parties = Array.from(
-                                            map.values()
-                                        );
+                                        ) {
+                                            const map = new Map(
+                                                this.plugin.data.parties.map(
+                                                    (c) => [c.name, c]
+                                                )
+                                            );
+                                            map.set(
+                                                modal.party.name,
+                                                modal.party
+                                            );
+                                            this.plugin.data.parties =
+                                                Array.from(map.values());
+                                        }
                                     }
-                                }
 
-                                await this.plugin.saveSettings();
+                                    await this.plugin.saveSettings();
 
-                                this._displayParties(additionalContainer);
+                                    this._displayParties(additionalContainer);
+                                })();
                             };
                         });
                     })
                     .addExtraButton((b) => {
-                        b.setIcon("trash").onClick(async () => {
-                            this.plugin.data.parties =
-                                this.plugin.data.parties.filter(
-                                    (p) => p.name != party.name
-                                );
-                            if (this.plugin.data.defaultParty == party.name) {
-                                this.plugin.data.defaultParty =
-                                    this.plugin.data.parties[0]?.name ?? null;
-                            }
-                            await this.plugin.saveSettings();
-                            this._displayParties(additionalContainer);
+                        b.setIcon("trash").onClick(() => {
+                            void (async () => {
+                                this.plugin.data.parties =
+                                    this.plugin.data.parties.filter(
+                                        (p) => p.name != party.name
+                                    );
+                                if (
+                                    this.plugin.data.defaultParty == party.name
+                                ) {
+                                    this.plugin.data.defaultParty =
+                                        this.plugin.data.parties[0]?.name ??
+                                        null;
+                                }
+                                await this.plugin.saveSettings();
+                                this._displayParties(additionalContainer);
+                            })();
                         });
                     });
             }
@@ -786,7 +842,7 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
         additionalContainer.ontoggle = () => {
             this.plugin.data.openState.status = additionalContainer.open;
         };
-        const summary = additionalContainer.createEl("summary");
+        const summary = additionalContainer.createEl("summary", { cls: "summary" });
         new Setting(summary).setHeading().setName("Statuses");
 
         new Setting(additionalContainer)
@@ -809,31 +865,35 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 let b = button
                     .setTooltip("Add Status")
                     .setButtonText("+")
-                    .onClick(async () => {
+                    .onClick(() => {
                         const modal = new StatusModal(this.plugin);
-                        modal.onClose = async () => {
-                            if (modal.canceled) return;
-                            if (!modal.status.name) return;
-                            if (
-                                this.plugin.data.statuses.filter(
-                                    (status) => status.name == modal.status.name
-                                )
-                            ) {
-                                const map = new Map(
-                                    [...this.plugin.data.statuses].map((c) => [
-                                        c.name,
-                                        c
-                                    ])
-                                );
-                                map.set(modal.status.name, modal.status);
-                                this.plugin.data.statuses = Array.from(
-                                    map.values()
-                                );
-                            } else {
-                                this.plugin.data.statuses.push(modal.status);
-                            }
-                            await this.plugin.saveSettings();
-                            this._displayStatuses(additionalContainer);
+                        modal.onClose = () => {
+                            void (async () => {
+                                if (modal.canceled) return;
+                                if (!modal.status.name) return;
+                                if (
+                                    this.plugin.data.statuses.filter(
+                                        (status) =>
+                                            status.name == modal.status.name
+                                    )
+                                ) {
+                                    const map = new Map(
+                                        [...this.plugin.data.statuses].map(
+                                            (c) => [c.name, c]
+                                        )
+                                    );
+                                    map.set(modal.status.name, modal.status);
+                                    this.plugin.data.statuses = Array.from(
+                                        map.values()
+                                    );
+                                } else {
+                                    this.plugin.data.statuses.push(
+                                        modal.status
+                                    );
+                                }
+                                await this.plugin.saveSettings();
+                                this._displayStatuses(additionalContainer);
+                            })();
                         };
                         modal.open();
                     });
@@ -845,17 +905,19 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 b
                     .setIcon("reset")
                     .setTooltip("Re-add Default Statuses")
-                    .onClick(async () => {
-                        this.plugin.data.statuses = Array.from(
-                            new Map(
-                                [
-                                    ...this.plugin.data.statuses,
-                                    ...Conditions
-                                ].map((c) => [c.name, c])
-                            ).values()
-                        );
-                        await this.plugin.saveSettings();
-                        this._displayStatuses(additionalContainer);
+                    .onClick(() => {
+                        void (async () => {
+                            this.plugin.data.statuses = Array.from(
+                                new Map(
+                                    [
+                                        ...this.plugin.data.statuses,
+                                        ...Conditions
+                                    ].map((c) => [c.name, c])
+                                ).values()
+                            );
+                            await this.plugin.saveSettings();
+                            this._displayStatuses(additionalContainer);
+                        })();
                     })
             );
         }
@@ -894,54 +956,60 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 .addExtraButton((b) =>
                     b.setIcon("pencil").onClick(() => {
                         const modal = new StatusModal(this.plugin, status);
-                        modal.onClose = async () => {
-                            if (modal.canceled) return;
-                            if (!modal.status.name) return;
-                            this.plugin.data.statuses.splice(
-                                this.plugin.data.statuses.indexOf(status),
-                                1,
-                                modal.status
-                            );
-                            if (
-                                this.plugin.data.statuses.filter(
-                                    (s) => s.name == modal.status.name
-                                ).length > 1
-                            ) {
+                        modal.onClose = () => {
+                            void (async () => {
+                                if (modal.canceled) return;
+                                if (!modal.status.name) return;
+                                this.plugin.data.statuses.splice(
+                                    this.plugin.data.statuses.indexOf(status),
+                                    1,
+                                    modal.status
+                                );
                                 if (
                                     this.plugin.data.statuses.filter(
-                                        (status) =>
-                                            status.name == modal.status.name
-                                    )
+                                        (s) => s.name == modal.status.name
+                                    ).length > 1
                                 ) {
-                                    const map = new Map(
-                                        this.plugin.data.statuses.map((c) => [
-                                            c.name,
-                                            c
-                                        ])
-                                    );
-                                    map.set(modal.status.name, modal.status);
-                                    this.plugin.data.statuses = Array.from(
-                                        map.values()
-                                    );
+                                    if (
+                                        this.plugin.data.statuses.filter(
+                                            (status) =>
+                                                status.name == modal.status.name
+                                        )
+                                    ) {
+                                        const map = new Map(
+                                            this.plugin.data.statuses.map(
+                                                (c) => [c.name, c]
+                                            )
+                                        );
+                                        map.set(
+                                            modal.status.name,
+                                            modal.status
+                                        );
+                                        this.plugin.data.statuses = Array.from(
+                                            map.values()
+                                        );
+                                    }
                                 }
-                            }
-                            await this.plugin.saveSettings();
-                            this._displayStatuses(additionalContainer);
+                                await this.plugin.saveSettings();
+                                this._displayStatuses(additionalContainer);
+                            })();
                         };
                         modal.open();
                     })
                 )
                 .addExtraButton((b) =>
-                    b.setIcon("trash").onClick(async () => {
-                        this.plugin.data.statuses =
-                            this.plugin.data.statuses.filter(
-                                (s) => s.name != status.name
-                            );
-                        if (this.plugin.data.unconsciousId == status.id) {
-                            this.plugin.data.unconsciousId = "Unconscious";
-                        }
-                        await this.plugin.saveSettings();
-                        this._displayStatuses(additionalContainer);
+                    b.setIcon("trash").onClick(() => {
+                        void (async () => {
+                            this.plugin.data.statuses =
+                                this.plugin.data.statuses.filter(
+                                    (s) => s.name != status.name
+                                );
+                            if (this.plugin.data.unconsciousId == status.id) {
+                                this.plugin.data.unconsciousId = "Unconscious";
+                            }
+                            await this.plugin.saveSettings();
+                            this._displayStatuses(additionalContainer);
+                        })();
                     })
                 )
                 .setClass("initiative-status-item");
@@ -952,7 +1020,7 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
         containerEl.ontoggle = () => {
             this.plugin.data.openState.plugin = containerEl.open;
         };
-        const summary = containerEl.createEl("summary");
+        const summary = containerEl.createEl("summary", { cls: "summary" });
         new Setting(summary).setHeading().setName("Plugin Integrations");
         summary.createDiv("collapser").createDiv("handle");
         if (!this.plugin.canUseStatBlocks) {
@@ -986,10 +1054,12 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 t.setDisabled(!this.plugin.canUseStatBlocks).setValue(
                     this.plugin.data.sync
                 );
-                t.onChange(async (v) => {
-                    this.plugin.data.sync = v;
-                    await this.plugin.saveSettings();
-                    this._displayIntegrations(containerEl);
+                t.onChange((v) => {
+                    void (async () => {
+                        this.plugin.data.sync = v;
+                        await this.plugin.saveSettings();
+                        await this._displayIntegrations(containerEl);
+                    })();
                 });
             });
         if (this.plugin.data.sync) {
@@ -1044,9 +1114,9 @@ export default class InitiativeTrackerSettings extends PluginSettingTab {
                 t.onChange((v) => {
                     this.plugin.data.initiative = v;
                 });
-                t.inputEl.onblur = async () => {
+                t.inputEl.onblur = () => {
                     tracker.roll(this.plugin);
-                    await this.plugin.saveSettings();
+                    void this.plugin.saveSettings();
                 };
             });
     }
@@ -1062,18 +1132,16 @@ class NewPlayerModal extends Modal {
         super(plugin.app);
         this.player = { ...(original ?? {}) };
     }
-    async display(load?: boolean) {
+    display(load?: boolean) {
         let { contentEl } = this;
 
         contentEl.addClass("initiative-tracker-add-player-modal");
 
         contentEl.empty();
 
-        let error = false;
-
-        contentEl.createEl("h2", {
-            text: this.original ? "Edit Player" : "New Player"
-        });
+        new Setting(contentEl)
+            .setName(this.original ? "Edit Player" : "New Player")
+            .setHeading();
 
         new Setting(contentEl)
             .setName("Link to Note")
@@ -1083,7 +1151,7 @@ class NewPlayerModal extends Modal {
 
                 let files = this.app.vault.getFiles();
                 const modal = new FileInputSuggest(this.app, t, files);
-                modal.onSelect(async ({ item: file }) => {
+                modal.onSelect(({ item: file }) => {
                     if (!file) return;
                     const metaData = this.app.metadataCache.getFileCache(file);
 
@@ -1126,7 +1194,6 @@ class NewPlayerModal extends Modal {
             });
 
         let nameInput: InputValidate,
-            levelInput: InputValidate,
             hpInput: InputValidate,
             currentHpInput: InputValidate,
             modInput: InputValidate;
@@ -1160,17 +1227,6 @@ class NewPlayerModal extends Modal {
             .setName("Level")
             .setDesc("Player level.")
             .addText((t) => {
-                levelInput = {
-                    input: t.inputEl,
-                    validate: (i: HTMLInputElement) => {
-                        let error = false;
-                        if (isNaN(Number(i.value)) || Number(i.value) <= 0) {
-                            i.addClass("has-error");
-                            error = true;
-                        }
-                        return error;
-                    }
-                };
                 t.setValue(`${this.player.level ?? ""}`);
                 t.onChange((v) => {
                     t.inputEl.removeClass("has-error");
@@ -1257,7 +1313,7 @@ class NewPlayerModal extends Modal {
         footerButtons.addButton((b) => {
             b.setTooltip("Save")
                 .setIcon("checkmark")
-                .onClick(async () => {
+                .onClick(() => {
                     let error = this.validateInputs(
                         nameInput,
                         hpInput,
@@ -1296,7 +1352,7 @@ class NewPlayerModal extends Modal {
         }
         return error;
     }
-    onOpen() {
+    onOpen(): void {
         this.display(true);
     }
 }
@@ -1331,31 +1387,29 @@ export class ConfirmModal extends Modal {
         super(app);
     }
     confirmed: boolean = false;
-    async display() {
-        new Promise((resolve) => {
-            this.contentEl.empty();
-            this.contentEl.addClass("confirm-modal");
-            this.contentEl.createEl("p", {
-                text: this.text
-            });
-            const buttonEl = this.contentEl.createDiv(
-                "fantasy-calendar-confirm-buttons"
-            );
-            new ButtonComponent(buttonEl)
-                .setButtonText(this.buttons.cta)
-                .setCta()
-                .onClick(() => {
-                    this.confirmed = true;
-                    this.close();
-                });
-            new ButtonComponent(buttonEl)
-                .setButtonText(this.buttons.secondary)
-                .onClick(() => {
-                    this.close();
-                });
+    display() {
+        this.contentEl.empty();
+        this.contentEl.addClass("confirm-modal");
+        this.contentEl.createEl("p", {
+            text: this.text
         });
+        const buttonEl = this.contentEl.createDiv(
+            "fantasy-calendar-confirm-buttons"
+        );
+        new ButtonComponent(buttonEl)
+            .setButtonText(this.buttons.cta)
+            .setCta()
+            .onClick(() => {
+                this.confirmed = true;
+                this.close();
+            });
+        new ButtonComponent(buttonEl)
+            .setButtonText(this.buttons.secondary)
+            .onClick(() => {
+                this.close();
+            });
     }
-    onOpen() {
+    onOpen(): void {
         this.display();
     }
 }

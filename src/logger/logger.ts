@@ -25,9 +25,7 @@ export default class Logger {
     private logFile: string;
     async setFile() {
         const file = (await this.adapter.exists(normalizePath(this.logFile)))
-            ? await this.vault.getAbstractFileByPath(
-                  normalizePath(this.logFile)
-              )
+            ? this.vault.getAbstractFileByPath(normalizePath(this.logFile))
             : await this.vault.create(this.logFile, ``);
 
         if (file instanceof TFile) {
@@ -244,6 +242,6 @@ export default class Logger {
             }
             toLog.push(perCreature.join(" "));
         }
-        this.log(`${toLog.join(". ")}.`);
+        void this.log(`${toLog.join(". ")}.`);
     }
 }

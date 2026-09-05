@@ -7,11 +7,12 @@
         type FilterLayout
     } from "./filter";
     import Filters from "./Filters.svelte";
-    import { ButtonComponent, Setting } from "obsidian";
+    import { ButtonComponent, Setting, type App } from "obsidian";
     import copy from "fast-copy";
     import { getId } from "src/utils/creature";
 
     export let filterStore: BuiltFilterStore;
+    export let app: App;
     const { layout, filters } = filterStore;
     const dispatch = createEventDispatcher<{
         cancel: null;
@@ -19,6 +20,7 @@
     }>();
 
     setContext<BuiltFilterStore>("filterStore", filterStore);
+    setContext<App>("app", app);
 
     $: copied = copy($layout);
     $: dispatch("update", copied);

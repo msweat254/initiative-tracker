@@ -1,6 +1,6 @@
 import copy from "fast-copy";
 import type { SRDMonster } from "src/types/creatures";
-import { prepareSimpleSearch, type SearchResult } from "obsidian";
+import { prepareSimpleSearch } from "obsidian";
 import type InitiativeTracker from "src/main";
 import { convertFraction } from "src/utils";
 import { getId } from "src/utils/creature";
@@ -8,6 +8,7 @@ import {
     derived,
     get,
     type Readable,
+    type Unsubscriber,
     type Updater,
     type Writable,
     writable
@@ -74,6 +75,27 @@ export interface StringFilterStore
 type FilterStore = RangeFilterStore | OptionsFilterStore | StringFilterStore;
 
 type FilterFactory<T extends Filter> = (filter: T) => FilterStore;
+
+function getCreatureField(creature: SRDMonster, field: string): unknown {
+    return (creature as Record<string, unknown>)[field];
+}
+
+function applyDerivedOptions(options: Map<Filter, Set<string | number>>) {
+    for (const [filter, set] of options) {
+        if (filter.type === FilterType.Range) {
+            const nums = [...set].filter(
+                (v): v is number => typeof v === "number"
+            );
+            if (nums.length >= 1) {
+                filter.options = [nums[0], nums[1] ?? nums[0]];
+            }
+        } else if (filter.type === FilterType.Options) {
+            filter.options = [...set].filter(
+                (v): v is string => typeof v === "string"
+            );
+        }
+    }
+}
 
 const createRangeFilter: FilterFactory<RangeFilter> = (filter) => {
     const store = writable<[number, number]>([...filter.options]);
@@ -183,57 +205,54 @@ export type BuiltFilterStore = ReturnType<typeof createFilterStore>;
 function getDerivedFilterOptions(
     creatures: SRDMonster[],
     filters: Filter[]
-): Map<Filter, Set<any>> {
-    const options = new Map(filters.map((f) => [f, new Set()]));
+): Map<Filter, Set<string | number>> {
+    const options = new Map<Filter, Set<string | number>>(
+        filters.map((f) => [f, new Set<string | number>()])
+    );
     for (const creature of creatures) {
         for (const filter of filters) {
             for (const field of filter.fields) {
-                if (field in creature) {
-                    switch (filter.type) {
-                        case FilterType.Range: {
-                            let fieldAsNumber = convertFraction(
-                                creature[field]
-                            );
-                            if (fieldAsNumber == null || isNaN(fieldAsNumber))
-                                continue;
-                            const current = [
-                                ...options.get(filter)
-                            ] as number[];
-                            if (!current.length) {
-                                current[0] = Infinity;
-                                current[1] = -Infinity;
-                            }
-                            current[0] = Math.min(current[0], fieldAsNumber);
-                            if (
-                                Math.max(current[1], fieldAsNumber) !=
-                                current[0]
-                            ) {
-                                current[1] = Math.max(
-                                    current[1],
-                                    fieldAsNumber
-                                );
-                            }
-
-                            options.set(filter, new Set(current));
-                            break;
-                        }
-                        case FilterType.Options: {
-                            if (Array.isArray(creature[field])) {
-                                for (const value of creature[field]) {
-                                    options.get(filter).add(normalize(value));
-                                }
-                            } else if (typeof creature[field] === "string") {
-                                options
-                                    .get(filter)
-                                    .add(normalize(creature[field]));
-                            }
-                            break;
-                        }
-                        case FilterType.Search: {
+                const creatureRecord = creature as Record<string, unknown>;
+                if (!(field in creatureRecord)) continue;
+                const fieldValue = creatureRecord[field];
+                switch (filter.type) {
+                    case FilterType.Range: {
+                        let fieldAsNumber = convertFraction(
+                            fieldValue as string | number
+                        );
+                        if (fieldAsNumber == null || isNaN(fieldAsNumber))
                             continue;
+                        const current = [
+                            ...options.get(filter)!
+                        ].filter((v): v is number => typeof v === "number");
+                        if (!current.length) {
+                            current[0] = Infinity;
+                            current[1] = -Infinity;
                         }
+                        current[0] = Math.min(current[0], fieldAsNumber);
+                        if (
+                            Math.max(current[1], fieldAsNumber) != current[0]
+                        ) {
+                            current[1] = Math.max(current[1], fieldAsNumber);
+                        }
+
+                        options.set(filter, new Set(current));
+                        break;
                     }
-                    continue;
+                    case FilterType.Options: {
+                        const optionSet = options.get(filter)!;
+                        if (Array.isArray(fieldValue)) {
+                            for (const value of fieldValue) {
+                                optionSet.add(normalize(String(value)));
+                            }
+                        } else if (typeof fieldValue === "string") {
+                            optionSet.add(normalize(fieldValue));
+                        }
+                        break;
+                    }
+                    case FilterType.Search: {
+                        continue;
+                    }
                 }
             }
         }
@@ -266,7 +285,7 @@ export function createFilterStore(
         }
     });
 
-    const subscriptions = new Map();
+    const subscriptions = new Map<string, Unsubscriber>();
     if (!plugin.data.builder) {
         plugin.data.builder = {
             sidebarIcon: true,
@@ -293,9 +312,7 @@ export function createFilterStore(
     const needToDerive = filters.filter((f) => f.derive);
     if (needToDerive.length) {
         const options = getDerivedFilterOptions(get(creatures), filters);
-        for (const [filter, set] of options) {
-            filter.options = Array.from(set) as any[];
-        }
+        applyDerivedOptions(options);
     }
     for (const filter of filters) {
         buildAndSubscribe(filter);
@@ -309,7 +326,8 @@ export function createFilterStore(
                     if (!filter.filter.fields.length) return true;
                     for (const field of filter.filter.fields) {
                         if (!(field in creature)) continue;
-                        return filter.compare(creature[field]);
+                        const value = getCreatureField(creature, field);
+                        return filter.compare(value as number | string);
                     }
                     return true;
                 })
@@ -324,7 +342,7 @@ export function createFilterStore(
     const setLayout = (newLayout: FilterLayout) => {
         layout.set(newLayout);
         plugin.data.builder.filters.layout = newLayout;
-        plugin.saveSettings();
+        void plugin.saveSettings();
     };
     const resetLayout = (def?: boolean) => {
         setLayout(def ? ORIGINAL_DEFAULT_LAYOUT : getDefaultLayout());
@@ -343,7 +361,7 @@ export function createFilterStore(
             plugin.data.builder.filters.filters = [...updated.values()].map(
                 (f) => f.filter
             );
-            plugin.saveSettings();
+            void plugin.saveSettings();
             return updated;
         });
     }
@@ -364,9 +382,7 @@ export function createFilterStore(
     const add = (filter: Filter, filters: Map<string, FilterStore>) => {
         if (filter.derive) {
             const options = getDerivedFilterOptions(get(creatures), [filter]);
-            for (const [filter, set] of options) {
-                filter.options = Array.from(set) as any[];
-            }
+            applyDerivedOptions(options);
         }
         const store = getFilterStore(filter);
         filters.set(filter.id, store);
@@ -378,8 +394,9 @@ export function createFilterStore(
     };
     const remove = (filter: string, filters: Map<string, FilterStore>) => {
         filters.delete(filter);
-        if (subscriptions.has(filter)) {
-            subscriptions.get(filter)();
+        const unsubscribe = subscriptions.get(filter);
+        if (unsubscribe) {
+            unsubscribe();
             subscriptions.delete(filter);
         }
         return filters;

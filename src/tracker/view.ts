@@ -26,21 +26,22 @@ export default class TrackerView extends ItemView {
 
     constructor(public leaf: WorkspaceLeaf, public plugin: InitiativeTracker) {
         super(leaf);
-        if (this.plugin.data.state?.creatures?.length) {
-        } else {
-        }
     }
-    async onOpen() {
+    onOpen(): Promise<void> {
         this.ui = new App({
             target: this.contentEl,
             props: {
                 plugin: this.plugin
             }
         });
-        this.ui.$on("player-view", () => this.openPlayerView());
+        this.ui.$on("player-view", () => {
+            void this.openPlayerView();
+        });
+        return Promise.resolve();
     }
-    async onClose() {
+    onClose(): Promise<void> {
         this.ui?.$destroy();
+        return Promise.resolve();
     }
     getViewType() {
         return INITIATIVE_TRACKER_VIEW;
@@ -81,7 +82,7 @@ export default class TrackerView extends ItemView {
         await leaf.setViewState({
             type: PLAYER_VIEW_VIEW
         });
-        await this.app.workspace.setActiveLeaf(leaf, { focus: true });
+        this.app.workspace.setActiveLeaf(leaf, { focus: true });
         return leaf.view as PlayerView;
     }
     async openPlayerView() {

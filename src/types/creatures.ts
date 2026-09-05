@@ -12,9 +12,27 @@ export interface CreatureState extends HomebrewCreature {
     active: boolean;
     hit_dice: string;
 }
+
+/** Values commonly stored on Fantasy Statblocks / bestiary monsters. */
+export type SRDMonsterField =
+    | string
+    | number
+    | boolean
+    | string[]
+    | number[]
+    | SRDMonsterTrait
+    | SRDMonsterTrait[]
+    | undefined
+    | null;
+
+export interface SRDMonsterTrait {
+    name: string;
+    desc?: string;
+}
+
 export interface SRDMonster {
     name: string;
-    ac: number;
+    ac: number | string;
     hp: number;
     hit_dice?: string;
     cr: string | number;
@@ -23,9 +41,27 @@ export interface SRDMonster {
     hidden?: boolean;
     bestiary?: boolean;
     player?: boolean;
+    source?: string | string[];
+    stats?: number[];
+    traits?: SRDMonsterTrait[];
+    level?: number | string;
+    xp?: number;
+    size?: string;
+    type?: string;
+    alignment?: string;
+    modifier?: number | number[];
+    "statblock-link"?: string;
 
-    [key: string]: any;
+    [key: string]: SRDMonsterField;
 }
+
+export function getMonsterField(
+    monster: SRDMonster,
+    field: string
+): SRDMonsterField {
+    return monster[field];
+}
+
 export interface HomebrewCreature {
     name?: string;
     display?: string;
@@ -49,6 +85,7 @@ export interface HomebrewCreature {
     static?: boolean;
     rollHP?: boolean;
     "statblock-link"?: string;
+    hit_dice?: string;
 }
 export type Condition = {
     name: string;
@@ -64,5 +101,7 @@ export type Condition = {
           startingAmount: number;
           amount: number;
       }
-    | {}
+    | {
+          hasAmount?: false;
+      }
 );

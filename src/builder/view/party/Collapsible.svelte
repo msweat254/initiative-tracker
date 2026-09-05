@@ -3,7 +3,7 @@
 </script>
 
 <details {open} on:toggle>
-    <summary>
+    <summary class="summary">
         <slot name="title" />
         <div class="collapser">
             <div class="handle" />
@@ -13,35 +13,35 @@
 </details>
 
 <style scoped>
-    details > summary {
+    details > summary.summary {
         outline: none;
-        display: flex !important;
+        display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 0.25rem;
-        list-style: none !important;
-        list-style-type: none !important;
+        list-style: none;
+        list-style-type: none;
         min-height: 1rem;
         border-top-left-radius: 0.1rem;
         border-top-right-radius: 0.1rem;
         cursor: pointer;
         position: relative;
-
         margin-bottom: 1rem;
+        border-bottom: 1px solid var(--background-modifier-border);
     }
 
-    details > summary::-webkit-details-marker,
-    details > summary::marker {
-        display: none !important;
+    details > summary.summary::-webkit-details-marker,
+    details > summary.summary::marker {
+        display: none;
     }
 
-    details > summary > .collapser {
+    details > summary.summary > .collapser {
         position: relative;
         display: flex;
         align-items: center;
     }
 
-    details > summary .collapser > .handle {
+    details > summary.summary .collapser > .handle {
         transform: rotate(0deg);
         transition: transform 0.25s;
         background-color: currentColor;
@@ -55,13 +55,7 @@
         height: 20px;
     }
 
-    details[open] > summary .collapser > .handle {
+    details[open] > summary.summary .collapser > .handle {
         transform: rotate(90deg);
-    }
-    details > summary {
-        border-bottom: 1px solid var(--background-modifier-border);
-    }
-    details > summary {
-        border-bottom: 1px solid var(--background-modifier-border);
     }
 </style>

@@ -28,21 +28,13 @@ body {
 .initiative-tracker-settings
     .initiative-tracker-additional-container
     .initiative-tracker-players
-    .initiative-tracker-player {
-    display: contents;
-}
-.initiative-tracker-settings
-    .initiative-tracker-additional-container
-    .initiative-tracker-players
-    .initiative-tracker-player
-    > *:not(:first-child) {
+    > *:not(:nth-child(6n + 1)) {
     text-align: center;
 }
 .initiative-tracker-settings
     .initiative-tracker-additional-container
     .initiative-tracker-players
-    .initiative-tracker-player
-    .initiative-tracker-player-icon {
+    > .initiative-tracker-player-icon {
     display: grid;
     grid-template-columns: auto auto;
     gap: 0.5rem;
@@ -50,8 +42,7 @@ body {
 .initiative-tracker-settings
     .initiative-tracker-additional-container
     .initiative-tracker-players
-    .initiative-tracker-player
-    .initiative-tracker-player-icon.imported {
+    > .initiative-tracker-player-icon.imported {
     display: flex;
     justify-content: center;
     width: auto;
@@ -60,20 +51,20 @@ body {
 .initiative-tracker-settings
     .initiative-tracker-additional-container
     .initiative-tracker-players
-    .initiative-tracker-player.headers {
+    > .headers {
     font-weight: bolder;
 }
 .initiative-tracker-settings
     .initiative-tracker-additional-container
     .initiative-tracker-players
-    .initiative-tracker-player.headers
+    > .headers
     .clickable-icon {
     color: var(--text-normal);
 }
 .initiative-tracker-settings
     .initiative-tracker-additional-container
     .initiative-tracker-players
-    .initiative-tracker-player.headers
+    > .headers
     .clickable-icon:hover {
     color: var(--text-normal);
 }
@@ -172,24 +163,25 @@ body {
     display: inline-block;
 }
 
-.initiative-tracker-settings details > summary {
+.initiative-tracker-settings details > summary.summary {
     outline: none;
-    display: block !important;
-    list-style: none !important;
-    list-style-type: none !important;
+    display: block;
+    list-style: none;
+    list-style-type: none;
     min-height: 1rem;
     border-top-left-radius: 0.1rem;
     border-top-right-radius: 0.1rem;
     cursor: pointer;
     position: relative;
+    border-bottom: 1px solid var(--background-modifier-border);
 }
 
-.initiative-tracker-settings details > summary::-webkit-details-marker,
-.initiative-tracker-settings details > summary::marker {
-    display: none !important;
+.initiative-tracker-settings details > summary.summary::-webkit-details-marker,
+.initiative-tracker-settings details > summary.summary::marker {
+    display: none;
 }
 
-.initiative-tracker-settings details > summary > .collapser {
+.initiative-tracker-settings details > summary.summary > .collapser {
     position: absolute;
     top: 50%;
     right: 8px;
@@ -197,7 +189,7 @@ body {
     content: "";
 }
 
-.initiative-tracker-settings details > summary > .collapser > .handle {
+.initiative-tracker-settings details > summary.summary > .collapser > .handle {
     transform: rotate(0deg);
     transition: transform 0.25s;
     background-color: currentColor;
@@ -211,14 +203,8 @@ body {
     height: 20px;
 }
 
-.initiative-tracker-settings details[open] > summary > .collapser > .handle {
+.initiative-tracker-settings details[open] > summary.summary > .collapser > .handle {
     transform: rotate(90deg);
-}
-.initiative-tracker-settings details > summary {
-    border-bottom: 1px solid var(--background-modifier-border);
-}
-.initiative-tracker-settings details > summary {
-    border-bottom: 1px solid var(--background-modifier-border);
 }
 
 .initiative-tracker-warning {
@@ -228,7 +214,7 @@ body {
     align-items: center;
 }
 
-.initiative-tracker-settings details > summary + .setting-item,
+.initiative-tracker-settings details > summary.summary + .setting-item,
 .initiative-tracker-explanation + .setting-item {
     border-top: 0;
 }
@@ -245,6 +231,10 @@ body {
 .initiative-tracker-textarea + .cm-editor {
     height: 200px;
     margin-bottom: 1rem;
+}
+
+.initiative-tracker-editor-source {
+    display: none;
 }
 
 .initiative-tracker.suggestion-item .name,

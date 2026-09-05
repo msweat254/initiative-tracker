@@ -71,7 +71,14 @@ class UndefinedRpgSystem extends RpgSystem {
  * use the value in the plugin settings.
  */
 export function getRpgSystem(plugin: InitiativeTracker, settingId?: string): RpgSystem {
-  switch (settingId ? settingId : plugin.data.rpgSystem) {
+  const resolvedId = settingId ?? plugin.data.rpgSystem;
+  const systemId = Object.values(RpgSystemSetting).includes(
+    resolvedId as RpgSystemSetting
+  )
+    ? (resolvedId as RpgSystemSetting)
+    : undefined;
+
+  switch (systemId) {
     case RpgSystemSetting.Dnd5e: return new Dnd5eRpgSystem(plugin);
     case RpgSystemSetting.Dnd5eLazyGm: return new Dnd5eLazyGmRpgSystem(plugin);
     case RpgSystemSetting.Dnd5eCR2Simple: return new Dnd5eCr2SimpleRpgSystem(plugin);

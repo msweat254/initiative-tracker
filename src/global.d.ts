@@ -1,6 +1,6 @@
 declare const app: import("obsidian").App;
 declare type DndEventInfo = import("svelte-dnd-action").DndEventInfo;
-declare interface GenericDndEvent<T extends Record<string, any>> {
+declare interface GenericDndEvent<T extends Record<string, unknown>> {
     items: T;
     info: DndEventInfo;
 }

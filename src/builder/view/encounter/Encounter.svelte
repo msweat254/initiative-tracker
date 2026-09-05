@@ -107,7 +107,7 @@
     };
     $: saveButton?.setDisabled($encounter.size == 0);
     const save = () => {
-        const modal = new Modal(app);
+        const modal = new Modal(plugin.app);
         modal.titleEl.setText("Save Encounter");
         let encName: string =
             $name != "Encounter"
@@ -149,7 +149,7 @@
         new Setting(modal.contentEl).addButton((b) =>
             b.setButtonText("Save").onClick(() => {
                 if (encName in plugin.data.encounters) {
-                    const confirm = new Modal(app);
+                    const confirm = new Modal(plugin.app);
                     confirm.titleEl.setText("Are you sure?");
                     confirm.contentEl.createEl("p", {
                         text: "This will overwrite an existing encounter. Are you sure?"

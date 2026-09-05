@@ -28,7 +28,11 @@ export class Dnd5eLazyGmRpgSystem extends RpgSystem {
 
     getCreatureDifficulty(creature: GenericCreature, _?: number[]): number {
         return convertFraction(
-            getFromCreatureOrBestiary(this.plugin, creature, (c) => c?.cr ?? 0)
+            getFromCreatureOrBestiary(
+                this.plugin,
+                creature,
+                (c): string | number => c?.cr ?? 0
+            )
         );
     }
 

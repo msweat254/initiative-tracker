@@ -6,11 +6,28 @@ import {
 import { type SRDMonster } from "src/types/creatures";
 import { convertFraction } from "../../../utils";
 import type InitiativeTracker from "../../../main";
-import { Modal } from "obsidian";
 import copy from "fast-copy";
 import { getId } from "../../../utils/creature";
 
 export const playerCount = writable(0);
+
+/**
+ * Compiles a user-provided JavaScript sort function from settings.
+ * Intentionally uses Function so users can define custom comparators in plugin settings.
+ */
+function compileCustomSort(
+    source: string
+): (a: SRDMonster, b: SRDMonster) => number {
+    // eslint-disable-next-line no-implied-eval, no-new-func -- intentional: user-defined custom sort from settings
+    return new Function("a", "b", source) as (
+        a: SRDMonster,
+        b: SRDMonster
+    ) => number;
+}
+
+function getSortField(creature: SRDMonster, field: string): unknown {
+    return (creature as Record<string, unknown>)[field];
+}
 
 export class TableHeader {
     public active: boolean;
@@ -26,19 +43,37 @@ export class TableHeader {
     private getSortByType() {
         switch (this.type) {
             case SortFunctions.LOCAL_COMPARE: {
-                return (a: Record<string, any>, b: Record<string, any>) =>
-                    (a[this.field] ?? "").localeCompare(b[this.field] ?? "");
+                return (a: SRDMonster, b: SRDMonster) =>
+                    String(getSortField(a, this.field) ?? "").localeCompare(
+                        String(getSortField(b, this.field) ?? "")
+                    );
             }
             case SortFunctions.CONVERT_FRACTION: {
-                return (a: Record<string, any>, b: Record<string, any>) =>
-                    convertFraction(a[this.field] ?? 0) -
-                    convertFraction(b[this.field] ?? 0);
+                return (a: SRDMonster, b: SRDMonster) => {
+                    const aVal = getSortField(a, this.field) ?? 0;
+                    const bVal = getSortField(b, this.field) ?? 0;
+                    return (
+                        convertFraction(
+                            typeof aVal === "string" || typeof aVal === "number"
+                                ? aVal
+                                : Number(aVal)
+                        ) -
+                        convertFraction(
+                            typeof bVal === "string" || typeof bVal === "number"
+                                ? bVal
+                                : Number(bVal)
+                        )
+                    );
+                };
             }
             case SortFunctions.CUSTOM: {
-                return new Function("a", "b", this.func!) as (
-                    a: SRDMonster,
-                    b: SRDMonster
-                ) => number;
+                return compileCustomSort(this.func ?? "");
+            }
+            default: {
+                return (a: SRDMonster, b: SRDMonster) =>
+                    String(getSortField(a, this.field) ?? "").localeCompare(
+                        String(getSortField(b, this.field) ?? "")
+                    );
             }
         }
     }
@@ -111,7 +146,7 @@ export function createTable(plugin: InitiativeTracker, monsters: SRDMonster[]) {
     }
     if (!plugin.data.builder.headers) {
         plugin.data.builder.headers = copy(DEFAULT_HEADERS);
-        plugin.saveSettings();
+        void plugin.saveSettings();
     }
 
     const store = writable<TableHeader[]>(
@@ -147,7 +182,7 @@ export function createTable(plugin: InitiativeTracker, monsters: SRDMonster[]) {
         });
     function updateAndSave(updater: Updater<TableHeader[]>): void {
         update(updater);
-        plugin.saveSettings();
+        void plugin.saveSettings();
     }
     return {
         allHeaders,
@@ -180,4 +215,3 @@ export function createTable(plugin: InitiativeTracker, monsters: SRDMonster[]) {
             })
     };
 }
-

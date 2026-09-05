@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { ExtraButtonComponent, setIcon } from "obsidian";
+    import { ExtraButtonComponent, setIcon, type App } from "obsidian";
     import {
         type BuiltFilterStore,
         type Filter,
@@ -14,6 +14,7 @@
     }>();
 
     const filterStore = getContext<BuiltFilterStore>("filterStore");
+    const app = getContext<App>("app");
     const { filters } = filterStore;
 
     export let id: string;
@@ -33,7 +34,7 @@
         new ExtraButtonComponent(node).setIcon("pencil");
     };
     const handleEdit = () => {
-        const modal = new EditFilterModal(filter);
+        const modal = new EditFilterModal(app, filter);
 
         modal.onClose = () => {
             if (modal.canceled) return;

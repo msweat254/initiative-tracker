@@ -27,14 +27,14 @@
             const moveevent = "touches" in e ? "touchmove" : "mousemove";
             const upevent = "touches" in e ? "touchend" : "mouseup";
 
-            document.addEventListener(moveevent, onMove);
-            document.addEventListener(upevent, onUp);
+            activeDocument.addEventListener(moveevent, onMove);
+            activeDocument.addEventListener(upevent, onUp);
 
             function onUp(e: MouseEvent) {
                 e.stopPropagation();
 
-                document.removeEventListener(moveevent, onMove);
-                document.removeEventListener(upevent, onUp);
+                activeDocument.removeEventListener(moveevent, onMove);
+                activeDocument.removeEventListener(upevent, onUp);
 
                 node.dispatchEvent(new CustomEvent("dragend"));
             }

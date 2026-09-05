@@ -1,4 +1,4 @@
-import { Modal, Setting } from "obsidian";
+import { Modal, type App } from "obsidian";
 
 import copy from "fast-copy";
 import Filters from "./Container.svelte";
@@ -9,22 +9,27 @@ export class FiltersModal extends Modal {
     canceled: boolean = false;
     reset = false;
     layout: FilterLayout;
-    constructor(layout: FilterLayout, public filterStore: BuiltFilterStore) {
+    constructor(
+        app: App,
+        layout: FilterLayout,
+        public filterStore: BuiltFilterStore
+    ) {
         super(app);
         this.layout = copy(layout);
     }
     onOpen() {
         this.titleEl.setText("Edit Filters");
-        const app = new Filters({
+        const component = new Filters({
             target: this.contentEl,
             props: {
-                filterStore: this.filterStore
+                filterStore: this.filterStore,
+                app: this.app
             }
         });
-        app.$on("update", (evt) => {
+        component.$on("update", (evt: CustomEvent<FilterLayout>) => {
             this.layout = copy(evt.detail);
         });
-        app.$on("cancel", () => {
+        component.$on("cancel", () => {
             this.canceled = true;
             this.close();
         });
@@ -34,13 +39,13 @@ export class FiltersModal extends Modal {
 export class EditFilterModal extends Modal {
     canceled = false;
     filter: Filter;
-    constructor(public original: Filter) {
+    constructor(app: App, public original: Filter) {
         super(app);
         this.filter = copy(original);
     }
     onOpen(): void {
         this.titleEl.setText("Edit Filter");
-        const app = new EditFilter({
+        const component = new EditFilter({
             target: this.contentEl,
             props: {
                 filter: this.filter,
@@ -48,10 +53,10 @@ export class EditFilterModal extends Modal {
             }
         });
 
-        app.$on("update", (evt) => {
+        component.$on("update", (evt: CustomEvent<Filter>) => {
             this.filter = evt.detail;
         });
-        app.$on("cancel", (evt) => {
+        component.$on("cancel", () => {
             this.canceled = true;
             this.close();
         });

@@ -17,6 +17,18 @@ export interface EncounterParameters {
     xp?: number;
     rollHP?: boolean;
 }
+interface RawCreatureDefinition {
+    creature?: string;
+    name?: string;
+    hp?: number;
+    ac?: number | string;
+    mod?: number;
+    xp?: number;
+    hidden?: boolean;
+    friend?: boolean;
+    ally?: boolean;
+    friendly?: boolean;
+}
 interface CreatureStats {
     name: string;
     ac: number | string;
@@ -145,7 +157,7 @@ export class EncounterParser {
                 ...[...(this.plugin.players.values() ?? [])]
                     .map((p) => p.name)
                     .filter((p) =>
-                        (players as string[])
+                        players
                             .map((n) => n.toLowerCase())
                             .includes(p.toLowerCase())
                     )
@@ -196,9 +208,7 @@ export class EncounterParser {
                 } else {
                     let amount;
                     if (!isNaN(Number(number)) && !isNaN(Number(existing[1]))) {
-                        amount =
-                            (Number(number) as number) +
-                            (existing[1] as number);
+                        amount = Number(number) + Number(existing[1]);
                     } else {
                         amount = `${number} + ${existing[1]}`;
                     }
@@ -211,7 +221,7 @@ export class EncounterParser {
     }
     parseRawCreature(raw: RawCreature, globalRollHP: boolean) {
         if (!raw) return {};
-        let monster: string | string[] | Record<string, any>,
+        let monster: string | string[] | RawCreatureDefinition,
             number: string | number = 1;
 
         if (typeof raw == "string") {
@@ -300,9 +310,14 @@ export class EncounterParser {
                 )
                 .map((v) => (isNaN(Number(v)) ? null : Number(v)));
         } else if (typeof monster == "object") {
-            ({ creature: name, name: display, hp, ac, mod, xp } = monster);
+            name = monster.creature;
+            display = monster.name;
+            hp = monster.hp;
+            ac = monster.ac;
+            mod = monster.mod;
+            xp = monster.xp;
             hidden = monster.hidden || false;
-            friendly = monster.friend || monster.ally || false;
+            friendly = monster.friend || monster.ally || monster.friendly || false;
         }
 
         if (hp) {
@@ -334,7 +349,7 @@ class EncounterComponent {
         public encounterEl: HTMLElement,
         public plugin: InitiativeTracker
     ) {
-        this.display();
+        void this.display();
     }
     async display() {
         this.instance = new EncounterUI({
@@ -367,9 +382,9 @@ export class EncounterBlock extends MarkdownRenderChild {
     }
     init(): void {
         if (this.table) {
-            this.postprocessTable();
+            void this.postprocessTable();
         } else {
-            this.postprocess();
+            void this.postprocess();
         }
     }
     async postprocess() {

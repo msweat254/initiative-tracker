@@ -88,15 +88,15 @@ export class Dnd5eRpgSystem extends RpgSystem {
         const xp = getFromCreatureOrBestiary(
             this.plugin,
             creature,
-            (c) => c?.xp ?? 0
+            (c): number => (typeof c?.xp === "number" ? c.xp : 0)
         );
         if (xp) return xp;
         const cr = getFromCreatureOrBestiary(
             this.plugin,
             creature,
-            (c) => c?.cr ?? "0"
+            (c): string | number => c?.cr ?? "0"
         );
-        return XP_PER_CR[cr] ?? 0;
+        return XP_PER_CR[String(cr)] ?? 0;
     }
 
     getAdditionalCreatureDifficultyStats(
@@ -106,7 +106,7 @@ export class Dnd5eRpgSystem extends RpgSystem {
         const cr = getFromCreatureOrBestiary(
             this.plugin,
             creature,
-            (c) => c?.cr ?? 0
+            (c): string | number => c?.cr ?? 0
         );
         return [`${crToString(cr)} CR`];
     }

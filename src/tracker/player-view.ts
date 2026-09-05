@@ -1,6 +1,5 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import type InitiativeTracker from "src/main";
-import type { Creature } from "src/utils/creature";
 import { PLAYER_VIEW_VIEW } from "../utils";
 
 import App from "./player/PlayerView.svelte";
@@ -19,13 +18,15 @@ export default class PlayerView extends ItemView {
     constructor(public leaf: WorkspaceLeaf, public plugin: InitiativeTracker) {
         super(leaf);
     }
-    async onOpen() {
+    onOpen(): Promise<void> {
         this._app = new App({
             target: this.contentEl,
             props: {}
         });
+        return Promise.resolve();
     }
-    async onClose() {
+    onClose(): Promise<void> {
         this._app?.$destroy();
+        return Promise.resolve();
     }
 }
