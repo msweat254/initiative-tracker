@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.1](https://github.com/msweat254/initiative-tracker/compare/1.0.0...1.0.1) (2026-09-05)
+
+
+### Bug Fixes
+
+* trigger release after review warning fixes ([4622850](https://github.com/msweat254/initiative-tracker/commit/4622850242b8cc2639c694c8ba1e7689c4a71938))
+
 ## [1.0.0] - 2026-05-25
 
 Initial release of **Initiative Tracker Plus**, a community fork of Initiative Tracker.
