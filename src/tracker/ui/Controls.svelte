@@ -22,6 +22,7 @@
     import { createEventDispatcher, getContext } from "svelte";
     import type InitiativeTracker from "src/main";
     import { tracker } from "../stores/tracker";
+    import { PartyInitiativeModal } from "./initiative/PartyInitiativeModal";
 
     const { state, data, logFile, sort, party } = tracker;
 
@@ -88,6 +89,16 @@
             item.setIcon(DICE)
                 .setTitle("Re-roll Initiatives")
                 .onClick(() => tracker.roll(plugin));
+        });
+        menu.addItem((item) => {
+            item.setIcon("list-ordered")
+                .setTitle("Set Party Initiative")
+                .onClick(() => {
+                    const players = tracker
+                        .getOrderedCreatures()
+                        .filter((c) => c.player);
+                    new PartyInitiativeModal(plugin, players).open();
+                });
         });
         menu.addItem((item) => {
             item.setIcon(GROUP)

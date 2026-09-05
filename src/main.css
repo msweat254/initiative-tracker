@@ -265,6 +265,14 @@ body {
     animation: rotation 1s ease infinite;
 }
 
+.initiative-tracker-party-initiative-modal {
+    width: min(32rem, 95vw);
+}
+
+.initiative-tracker-party-initiative-modal .modal-content {
+    padding-top: 0.5rem;
+}
+
 
 @keyframes rotation {
     0% {

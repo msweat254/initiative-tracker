@@ -44,6 +44,7 @@ type CreatureUpdate = {
     remove_status?: Condition[];
     hidden?: boolean;
     enabled?: boolean;
+    static?: boolean;
     //this is so dirty
     set_hp?: number;
     set_max_hp?: number;
@@ -223,9 +224,12 @@ function createTracker() {
         ...updates: CreatureUpdates[]
     ) => {
         for (const { creature, change } of updates) {
-            if (change.initiative) {
+            if (change.initiative != null) {
                 creature.initiative = Number(change.initiative);
                 logNewInitiative(creature);
+            }
+            if (change.static != null) {
+                creature.static = change.static;
             }
             if (change.name) {
                 creature.name = change.name;
@@ -544,6 +548,9 @@ function createTracker() {
                     }
                     if (!isNaN(Number(change.initiative))) {
                         creature.initiative = change.initiative;
+                    }
+                    if (change.static != null) {
+                        creature.static = change.static;
                     }
                     if (typeof change.name == "string") {
                         creature.name = change.name;
