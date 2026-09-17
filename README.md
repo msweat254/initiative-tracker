@@ -71,7 +71,7 @@ other controls apply to the whole group.
 ## Relationship to the original plugin
 
 This plugin is a **fork** of [Initiative Tracker](https://github.com/valentine195/obsidian-initiative-tracker) by Jeremy Valentine. **Initiative Tracker Plus** is maintained independently in [msweat254/initiative-tracker](https://github.com/msweat254/initiative-tracker).
-
+ 
 - **Plugin ID:** `initiative-tracker-plus` (do not install alongside the original `initiative-tracker` plugin)
 - **License:** GNU GPL v3 — see [LICENSE](LICENSE) and [NOTICE](NOTICE)
 
