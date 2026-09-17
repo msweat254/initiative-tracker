@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.1.0](https://github.com/msweat254/initiative-tracker/compare/1.0.1...1.1.0) (2026-09-05)
+
+
+### Features
+
+* Add initiaitve modal ([3999b45](https://github.com/msweat254/initiative-tracker/commit/3999b45b9a62f36fca93e69f4bd239a394fbd272))
+* Adding set to full functionality ([8289e16](https://github.com/msweat254/initiative-tracker/commit/8289e165a924f336974749d44f0eaf42b0dd85f7))
+
+
+### Bug Fixes
+
+* don't use settings in settings ([40a9449](https://github.com/msweat254/initiative-tracker/commit/40a9449e09e81d1be5e4ab7ec6317c89288a221b))
+
 ## [1.0.1](https://github.com/msweat254/initiative-tracker/compare/1.0.0...1.0.1) (2026-09-05)
 
 
