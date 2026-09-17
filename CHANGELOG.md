@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/msweat254/initiative-tracker/compare/1.1.0...1.2.0) (2026-09-17)
+
+
+### Features
+
+* add grouped encounter creatures and AoE damage ([da53662](https://github.com/msweat254/initiative-tracker/commit/da53662a27f132d6a4134643263854a4d0a224b6))
+
 ## [1.1.0](https://github.com/msweat254/initiative-tracker/compare/1.0.1...1.1.0) (2026-09-05)
 
 
