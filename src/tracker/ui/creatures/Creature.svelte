@@ -87,6 +87,15 @@
             <strong class="name player">{creature.name}</strong>
         {:else}
             <span class="name">{name()}</span>
+            {#if creature.isGroup}
+                <span
+                    class="group-summary"
+                    aria-label={`${creature.groupRemaining} of ${creature.groupSize} creatures remaining; outgoing damage multiplier ${creature.groupDamageMultiplier}`}
+                >
+                    {creature.groupRemaining}/{creature.groupSize}
+                    · ×{creature.groupDamageMultiplier}
+                </span>
+            {/if}
         {/if}
     </div>
     <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -169,6 +178,11 @@
         padding: 0;
         height: unset;
         word-break: keep-all;
+    }
+    .group-summary {
+        color: var(--text-muted);
+        font-size: var(--font-smallest);
+        white-space: nowrap;
     }
     .center {
         text-align: center;

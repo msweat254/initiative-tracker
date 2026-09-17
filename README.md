@@ -47,6 +47,27 @@ creatures:
 3. Add creatures by name, dice roll, or bestiary entry.
 4. Click the play button to start tracking initiative.
 
+### Grouped creatures
+
+Copies of the same creature can be tracked as one combatant:
+
+````markdown
+```encounter
+name: Goblin Patrol
+creatures:
+  - creature: Goblin
+    count: 6
+    grouped: true
+```
+````
+
+A group has one initiative and one pooled HP total. Its surviving count drops
+whenever the pool crosses a member's HP threshold. The DM view shows the
+current outgoing damage multiplier (for example, `×4` for four survivors);
+this is informational and does not multiply damage entered against the group.
+The player view shows only the surviving count. Conditions, AC changes, and
+other controls apply to the whole group.
+
 ## Relationship to the original plugin
 
 This plugin is a **fork** of [Initiative Tracker](https://github.com/valentine195/obsidian-initiative-tracker) by Jeremy Valentine. **Initiative Tracker Plus** is maintained independently in [msweat254/initiative-tracker](https://github.com/msweat254/initiative-tracker).

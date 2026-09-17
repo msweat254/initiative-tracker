@@ -5,7 +5,8 @@
     "types": "./dist/index.d.ts",
     "scripts": {
         "build": "node esbuild.config.mjs production && tsc --project tsconfig.json --emitDeclarationOnly --declaration --declarationMap --outdir ./dist",
-        "dev": "node esbuild.config.mjs"
+        "dev": "node esbuild.config.mjs",
+        "dev:test": "node --env-file=.env esbuild.config.mjs"
     },
     "keywords": [],
     "author": "Mike",

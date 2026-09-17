@@ -62,13 +62,11 @@
 
                 const view = plugin.view;
                 const creatures = [...creatureMap]
-                    .map(([creature, number]) => {
-                        if (isNaN(Number(number)) || number < 1)
-                            return [creature.toJSON()];
-                        return [...Array(number).keys()].map((v) =>
-                            Creature.new(creature).toJSON()
-                        );
-                    })
+                    .map(([creature, number]) =>
+                        Creature.fromEncounter(creature, number).map((value) =>
+                            value.toJSON()
+                        )
+                    )
                     .flat();
                 const playerList = players.map((p) =>
                     plugin.getPlayerByName(p).toJSON()
@@ -98,12 +96,9 @@
         }
         const view = plugin.view;
         const creatures: Creature[] = [...creatureMap]
-            .map(([creature, number]) => {
-                if (isNaN(Number(number)) || number < 1) return [creature];
-                return [...Array(number).keys()].map((v) =>
-                    Creature.new(creature)
-                );
-            })
+            .map(([creature, number]) =>
+                Creature.fromEncounter(creature, number)
+            )
             .flat();
         tracker.add(plugin, rollHP, ...creatures);
     };

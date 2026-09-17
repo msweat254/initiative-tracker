@@ -45,12 +45,9 @@
 
         const view = plugin.view;
         const creatures: Creature[] = [...creatureMap]
-            .map(([creature, number]) => {
-                if (isNaN(Number(number)) || number < 1) return [creature];
-                return [...Array(number).keys()].map((v) =>
-                    Creature.new(creature)
-                );
-            })
+            .map(([creature, number]) =>
+                Creature.fromEncounter(creature, number)
+            )
             .flat();
 
         tracker.new(plugin, {
@@ -60,7 +57,8 @@
             round: 1,
             logFile: null,
             newLog: true,
-            roll: true
+            roll: true,
+            rollHP
         });
         plugin.app.workspace.revealLeaf(view.leaf);
     };
@@ -74,12 +72,9 @@
             await plugin.addTrackerView();
         }
         const creatures: Creature[] = [...creatureMap]
-            .map(([creature, number]) => {
-                if (isNaN(Number(number)) || number < 1) return [creature];
-                return [...Array(number).keys()].map((v) =>
-                    Creature.new(creature)
-                );
-            })
+            .map(([creature, number]) =>
+                Creature.fromEncounter(creature, number)
+            )
             .flat();
         tracker.add(plugin, rollHP, ...creatures);
     };

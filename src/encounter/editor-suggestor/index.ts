@@ -14,6 +14,8 @@ enum SuggestContext {
     Creatures,
     Party,
     RollHP,
+    Grouped,
+    CreatureProperty,
     Name,
     None
 }
@@ -23,7 +25,15 @@ interface ParsedEncounter {
     players?: string[];
     party?: string;
     rollHP?: boolean;
-    creatures?: Array<{ [key: number]: string } | string>;
+    creatures?: Array<
+        | { [key: number]: string }
+        | {
+              creature: string;
+              count?: number | string;
+              grouped?: boolean;
+          }
+        | string
+    >;
 }
 
 export class EncounterSuggester extends EditorSuggest<string> {
@@ -55,7 +65,11 @@ export class EncounterSuggester extends EditorSuggest<string> {
                 ];
                 break;
             case SuggestContext.RollHP:
+            case SuggestContext.Grouped:
                 suggestions = ["true", "false"];
+                break;
+            case SuggestContext.CreatureProperty:
+                suggestions = ["count", "grouped"];
                 break;
             case SuggestContext.None:
                 suggestions = [
@@ -88,6 +102,10 @@ export class EncounterSuggester extends EditorSuggest<string> {
                 }
                 break;
             }
+            case SuggestContext.CreatureProperty: {
+                value = `${value}: `;
+                break;
+            }
             case SuggestContext.Creatures:
             case SuggestContext.Players: {
                 const spaces = this.context.editor
@@ -97,7 +115,8 @@ export class EncounterSuggester extends EditorSuggest<string> {
                 break;
             }
             case SuggestContext.Party:
-            case SuggestContext.RollHP: {
+            case SuggestContext.RollHP:
+            case SuggestContext.Grouped: {
                 const endsWithSpace = /\s$/.test(
                     this.context.editor.getLine(this.context.start.line)
                 );
@@ -182,6 +201,19 @@ export class EncounterSuggester extends EditorSuggest<string> {
                 query
             };
         }
+        if (/^\s+grouped:/.test(line)) {
+            this._context = SuggestContext.Grouped;
+            const query = line.match(/^\s+grouped:\s?(.*)$/)?.[1] ?? "";
+            if (query === "true" || query === "false") return null;
+            return {
+                end: cursor,
+                start: {
+                    ch: line.length - query.length,
+                    line: cursor.line
+                },
+                query
+            };
+        }
         if (/^party:/.test(line)) {
             this._context = SuggestContext.Party;
             const query = line.match(/^party:\s?(.*)$/)?.[1] ?? "";
@@ -196,7 +228,7 @@ export class EncounterSuggester extends EditorSuggest<string> {
                 query
             };
         }
-        if (/\s+- (?:\d:)?/.test(line)) {
+        if (/\s+- (?:\d:|creature:)?/.test(line)) {
             //in creature or player context... try to figure out which
             let found = false;
             for (let i = split.length - 1; i >= 0; i--) {
@@ -217,7 +249,20 @@ export class EncounterSuggester extends EditorSuggest<string> {
             //panic
             if (!found) return null;
 
-            const query = line.match(/^\s+- (?:\d:)?(.*)$/)?.[1] ?? "";
+            const query =
+                line.match(/^\s+- (?:\d:|creature:\s*)?(.*)$/)?.[1] ?? "";
+            return {
+                end: cursor,
+                start: {
+                    ch: line.length - query.length,
+                    line: cursor.line
+                },
+                query
+            };
+        }
+        if (/^\s{4,}[a-zA-Z]*$/.test(line)) {
+            this._context = SuggestContext.CreatureProperty;
+            const query = line.trim();
             return {
                 end: cursor,
                 start: {

@@ -451,16 +451,20 @@ function createTracker() {
                         hp: creature.hp,
                         modifier: creature.modifier,
                         xp: creature.xp,
-                        hidden: creature.hidden
+                        hidden: creature.hidden,
+                        friendly: creature.friendly,
+                        static: creature.static,
+                        grouped: creature.grouped
                     };
                     const existing = [...creatureMap].find(([c]) =>
                         equivalent(c, stats)
                     );
+                    const count = creature.isGroup ? creature.groupSize : 1;
                     if (!existing) {
-                        creatureMap.set(creature, 1);
+                        creatureMap.set(creature, count);
                         continue;
                     }
-                    creatureMap.set(existing[0], existing[1] + 1);
+                    creatureMap.set(existing[0], existing[1] + count);
                 }
                 return {
                     difficulty: rpgSystem.getEncounterDifficulty(
@@ -1074,6 +1078,11 @@ function setCreatureHP(
         if (!creature.hit_dice?.length) continue;
         let roller = plugin.getRoller(creature.hit_dice);
         if (!roller) continue;
-        creature.hp = creature.max = creature.current_max = roller.rollSync();
+        const hp = roller.rollSync();
+        if (creature.isGroup) {
+            creature.setGroupMemberHP(hp);
+        } else {
+            creature.hp = creature.max = creature.current_max = hp;
+        }
     }
 }

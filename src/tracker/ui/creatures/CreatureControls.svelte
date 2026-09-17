@@ -13,6 +13,7 @@
     import { createEventDispatcher, getContext } from "svelte";
     import type InitiativeTracker from "src/main";
     import { tracker } from "src/tracker/stores/tracker";
+    import { AoeModal } from "./AoeModal";
 
     const dispatch = createEventDispatcher();
 
@@ -35,6 +36,15 @@
                         tracker.setUpdate(creature, e);
                     });
             });
+            if (creature.isGroup) {
+                menu.addItem((item) => {
+                    item.setIcon("splash")
+                        .setTitle("Apply AoE")
+                        .onClick(() => {
+                            new AoeModal(plugin, creature).open();
+                        });
+                });
+            }
             if (creature.current_ac != creature.ac) {
                 menu.addItem((item) => {
                     item.setIcon(HP)

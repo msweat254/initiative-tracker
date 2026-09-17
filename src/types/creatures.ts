@@ -84,6 +84,9 @@ export interface HomebrewCreature {
     active?: boolean;
     static?: boolean;
     rollHP?: boolean;
+    grouped?: boolean;
+    groupSize?: number;
+    groupMemberMaxHP?: number;
     "statblock-link"?: string;
     hit_dice?: string;
 }

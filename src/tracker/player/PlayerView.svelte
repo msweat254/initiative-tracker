@@ -69,6 +69,14 @@
                         />
                     {/if}
                     {name(creature)}
+                    {#if creature.isGroup}
+                        <span
+                            class="group-count"
+                            aria-label={`${creature.groupRemaining} of ${creature.groupSize} creatures remaining`}
+                        >
+                            ({creature.groupRemaining}/{creature.groupSize})
+                        </span>
+                    {/if}
                 </td>
                 <td
                     class:center={true}
@@ -114,6 +122,11 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
+    }
+    .group-count {
+        color: var(--text-muted);
+        font-size: smaller;
+        white-space: nowrap;
     }
     .center {
         text-align: center;

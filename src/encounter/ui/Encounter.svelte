@@ -62,12 +62,9 @@
 
         const view = plugin.view;
         const creatures: Creature[] = [...creatureMap]
-            .map(([creature, number]) => {
-                if (isNaN(Number(number)) || number < 1) return [creature];
-                return [...Array(number).keys()].map((v) =>
-                    Creature.new(creature)
-                );
-            })
+            .map(([creature, number]) =>
+                Creature.fromEncounter(creature, number)
+            )
             .flat();
         const transformedCreatures: CreatureState[] = [];
         const combinedPlayers = [
@@ -105,12 +102,9 @@
             await plugin.addTrackerView();
         }
         const creatures: Creature[] = [...creatureMap]
-            .map(([creature, number]) => {
-                if (isNaN(Number(number)) || number < 1) return [creature];
-                return [...Array(number).keys()].map((v) =>
-                    Creature.new(creature)
-                );
-            })
+            .map(([creature, number]) =>
+                Creature.fromEncounter(creature, number)
+            )
             .flat();
         for (const player of players) {
             if (!$tracker.find((creature) => creature.name === player)) {

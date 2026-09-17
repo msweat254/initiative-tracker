@@ -44,6 +44,9 @@ export class Creature {
     number = 0;
     display: string;
     friendly: boolean = false;
+    grouped: boolean = false;
+    groupSize: number = 1;
+    groupMemberMaxHP: number = 0;
     "statblock-link": string;
     cr: string | number;
     path: string;
@@ -79,6 +82,11 @@ export class Creature {
         this.current_ac = this.ac = creature.ac ?? undefined;
         this.dirty_ac = false;
         this.max = this.current_max = creature.hp ? Number(creature.hp) : 0;
+        this.grouped = creature.grouped ?? false;
+        this.groupSize = Math.max(1, Number(creature.groupSize) || 1);
+        this.groupMemberMaxHP =
+            Number(creature.groupMemberMaxHP) ||
+            (this.groupSize > 1 ? this.max / this.groupSize : this.max);
         this.note = creature.note;
         this.level = creature.level;
         this.player = creature.player;
@@ -130,6 +138,41 @@ export class Creature {
         return DEFAULT_UNDEFINED;
     }
 
+    get isGroup() {
+        return this.grouped && this.groupSize > 1;
+    }
+
+    get groupRemaining() {
+        if (!this.isGroup) return 1;
+        if (this.hp <= 0) return 0;
+        if (this.groupMemberMaxHP <= 0) return this.groupSize;
+        return Math.min(
+            this.groupSize,
+            Math.ceil(this.hp / this.groupMemberMaxHP)
+        );
+    }
+
+    get groupDamageMultiplier() {
+        return this.groupRemaining;
+    }
+
+    initializeGroup(count: number) {
+        const groupSize = Math.max(1, Math.floor(Number(count) || 1));
+        this.grouped = groupSize > 1;
+        this.groupSize = groupSize;
+        this.groupMemberMaxHP = this.max;
+        this.hp *= groupSize;
+        this.max *= groupSize;
+        this.current_max *= groupSize;
+        return this;
+    }
+
+    setGroupMemberHP(memberHP: number) {
+        const hp = Math.max(0, Number(memberHP) || 0);
+        this.groupMemberMaxHP = hp;
+        this.hp = this.max = this.current_max = hp * this.groupSize;
+    }
+
     getName() {
         let name = [this.display ?? this.name];
         /* if (this.display) {
@@ -175,6 +218,15 @@ export class Creature {
             },
             creature.initiative
         );
+    }
+
+    static fromEncounter(creature: Creature, count: number) {
+        const amount = Math.floor(Number(count));
+        if (!Number.isFinite(amount) || amount < 1) return [creature];
+        if (creature.grouped) {
+            return [Creature.new(creature).initializeGroup(amount)];
+        }
+        return [...Array(amount)].map(() => Creature.new(creature));
     }
 
     static from(creature: HomebrewCreature | SRDMonster) {
@@ -262,6 +314,9 @@ export class Creature {
             active: this.active,
             hidden: this.hidden,
             friendly: this.friendly,
+            grouped: this.grouped,
+            groupSize: this.groupSize,
+            groupMemberMaxHP: this.groupMemberMaxHP,
             "statblock-link": this["statblock-link"],
             hit_dice: this.hit_dice,
             rollHP: this.rollHP

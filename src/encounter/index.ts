@@ -5,8 +5,12 @@ import { Creature } from "../utils/creature";
 import EncounterUI from "./ui/Encounter.svelte";
 import EncounterTable from "./ui/EncounterTable.svelte";
 
-type RawCreatureArray = string | Array<string | { [key: number]: string }>;
-type RawCreature = string | { [key: number]: string };
+type RawCreatureArray = string | RawCreature[];
+type RawCreature =
+    | string
+    | string[]
+    | RawCreatureDefinition
+    | { [key: string]: string | string[] | RawCreatureDefinition };
 type RawPlayers = boolean | "none" | string[];
 export interface EncounterParameters {
     name?: string;
@@ -19,6 +23,8 @@ export interface EncounterParameters {
 }
 interface RawCreatureDefinition {
     creature?: string;
+    count?: number | string;
+    grouped?: boolean;
     name?: string;
     hp?: number;
     ac?: number | string;
@@ -40,6 +46,7 @@ interface CreatureStats {
     friendly?: boolean;
     static?: boolean;
     rollHP?: boolean;
+    grouped?: boolean;
 }
 
 export const equivalent = (
@@ -54,7 +61,8 @@ export const equivalent = (
         creature.xp == existing.xp &&
         creature.hidden == existing.hidden &&
         creature.friendly == existing.friendly &&
-        creature.static == existing.static
+        creature.static == existing.static &&
+        creature.grouped == existing.grouped
     );
 };
 
@@ -198,7 +206,8 @@ export class EncounterParser {
                     xp: creature.xp,
                     hidden: creature.hidden,
                     friendly: creature.friendly,
-                    rollHP: creature.rollHP
+                    rollHP: creature.rollHP,
+                    grouped: creature.grouped
                 };
                 const existing = [...creatureMap].find(([c]) =>
                     equivalent(c, stats)
@@ -233,9 +242,14 @@ export class EncounterParser {
         } else if (Array.isArray(raw)) {
             monster = raw;
         } else if (typeof raw == "object") {
-            let entries = Object.entries(raw).flat();
-            number = entries[0];
-            monster = entries[1];
+            if ("creature" in raw) {
+                monster = raw as RawCreatureDefinition;
+                number = monster.count ?? 1;
+            } else {
+                const [count, definition] = Object.entries(raw)[0] ?? [];
+                number = count;
+                monster = definition;
+            }
         }
 
         if (!monster) return {};
@@ -258,6 +272,7 @@ export class EncounterParser {
             xp: number,
             hidden: boolean = false,
             friendly: boolean = false,
+            grouped: boolean = false,
             rollHP: boolean = globalRollHP;
 
         if (typeof monster == "string") {
@@ -318,6 +333,7 @@ export class EncounterParser {
             xp = monster.xp;
             hidden = monster.hidden || false;
             friendly = monster.friend || monster.ally || monster.friendly || false;
+            grouped = monster.grouped || false;
         }
 
         if (hp) {
@@ -336,7 +352,9 @@ export class EncounterParser {
         creature.xp = xp ?? creature.xp;
         creature.hidden = hidden ?? creature.hidden;
         creature.friendly = friendly ?? creature.friendly;
+        creature.grouped = grouped;
         creature.rollHP = rollHP ?? globalRollHP ?? creature.rollHP;
+        if (grouped && !isNaN(Number(number)) && Number(number) < 1) return {};
 
         return { creature, number };
     }
